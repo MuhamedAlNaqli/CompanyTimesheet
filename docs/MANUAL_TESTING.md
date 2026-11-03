@@ -11,9 +11,8 @@ Najkraći put do probe na jednom računaru: **tri koraka**, bez podešavanja.
 **Probne osobe** (lozinka za sve: `Demo-password-1`): `lejla` (radnica), `haris` i `maja` (radnici), `tarik` (njihov nadređeni), `selma` (iznad Tarika),
 `nermin` (radnik kod Selme). Administrator: `admin` / `Admin-first-password-1` (traži izbor vlastite lozinke).
 
-> **Upozorenje Windowsa pri instalaciji.** Izdanja su potpisana probnim certifikatom koji vaš računar još ne poznaje. Jednom, kao administrator:
-> skinite sa releasea i pokrenite `trust-test-certificate.ps1` (desni klik na PowerShell → *Run as administrator*, pa `.\trust-test-certificate.ps1`).
-> Nakon toga Windows za ova izdanja prikazuje izdavača "Smart Point (test signing)". Bez toga: desni klik na MSI → *Properties* → *Unblock*, ili *More info → Run anyway*.
+> **Upozorenje Windowsa pri instalaciji.** Izdanja za sada nisu potpisana, pa Windows (SmartScreen) može prikazati "Windows protected your PC".
+> Desni klik na preuzeti MSI i zip → *Properties* → označiti *Unblock* → *OK*, ili u upozorenju *More info → Run anyway*.
 
 ## 2. Scenariji
 
@@ -71,4 +70,3 @@ Isključeno namjerno: izvoz u Excel/PDF, uloge finansija i pravnog, prijava Wind
 
 1. Zatvorite prozor servera i obrišite `%LOCALAPPDATA%\CompanyTimesheetTestServer` (baza) i `%LOCALAPPDATA%\CompanyTimesheet` (postavke i log).
 2. *Settings → Apps*: deinstalirajte **Evidencija radnog vremena** (uklanja i zakazani zadatak).
-3. Ako ste pokrenuli `trust-test-certificate.ps1`: `certmgr.msc` → *Trusted Root Certification Authorities* i *Trusted Publishers* → uklonite "Smart Point (test signing)".
