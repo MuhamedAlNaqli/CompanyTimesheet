@@ -64,6 +64,20 @@ jobs:
       shell: pwsh
       run: ./installer/build-installer.ps1 -Version ${{ steps.version.outputs.assembly }}
 
+    - name: Publish the test server
+      # A server for trying the app on one PC: a single exe with SQLite and a start script. A company runs the server from its own build
+      # with PostgreSQL (docs/API_IT_GUIDE.md).
+      shell: pwsh
+      run: |
+        $version = '${{ steps.version.outputs.version }}'
+        dotnet publish src/Company.Api -c Release -r win-x64 --self-contained true -o publish/server `
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=embedded `
+          "-p:AssemblyVersion=${{ steps.version.outputs.assembly }}" --verbosity minimal
+        if ($LASTEXITCODE -ne 0) { throw "dotnet publish of the server failed" }
+        Copy-Item server-test/* publish/server/
+        Remove-Item publish/server/appsettings.Development.json, publish/server/web.config, publish/server/*.staticwebassets.endpoints.json -ErrorAction SilentlyContinue
+        Compress-Archive -Path publish/server/* -DestinationPath "installer/output/CompanyTimesheet-Server-v$version-win-x64.zip"
+
     - name: Write the appcast and the release notes
       id: files
       shell: pwsh
@@ -99,6 +113,9 @@ jobs:
         @"
         # Evidencija radnog vremena $version
 
+        **Files:** ``CompanyTimesheet-v...-win-x64.msi`` is the app; ``CompanyTimesheet-Server-v...-win-x64.zip`` is a test server for one PC (SQLite,
+        no installation: unzip and run ``start-test-server.cmd``). How to try it: docs/MANUAL_TESTING.md in the repository.
+
         Install the MSI below on the PC of the employee (it needs administrator rights once). The address of the company server goes into
         ``appsettings.local.json`` next to the program (``Company:ApiUrl``); an update keeps that file.
         An installed copy finds this version by itself (the button with the cloud icon in the window checks at once).
@@ -116,7 +133,8 @@ jobs:
       run: |
         $flags = @()
         if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $flags += '--prerelease' }
-        gh release create "${{ github.ref_name }}" "${{ steps.files.outputs.msi }}" "installer/output/appcast.xml" `
+        $zip = (Get-ChildItem installer/output -Filter *.zip | Select-Object -First 1).FullName
+        gh release create "${{ github.ref_name }}" "${{ steps.files.outputs.msi }}" "$zip" "installer/output/appcast.xml" `
           --title "Evidencija radnog vremena ${{ github.ref_name }}" --notes-file release-notes.md @flags
 
     - name: Keep the MSI of a manual run
@@ -126,5 +144,6 @@ jobs:
         name: msi-installer
         path: |
           installer/output/*.msi
+          installer/output/*.zip
           installer/output/appcast.xml
         retention-days: 14
