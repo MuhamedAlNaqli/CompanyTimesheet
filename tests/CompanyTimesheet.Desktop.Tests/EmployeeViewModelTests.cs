@@ -170,6 +170,15 @@ public class EmployeeViewModelTests
 
         public Task<List<EmployeeDto>> GetEmployeesAsync(CancellationToken ct = default) { Calls.Add("employees"); return Task.FromResult(Employees); }
         public Task<List<CredentialDto>> GetCredentialsAsync(CancellationToken ct = default) { Calls.Add("credentials"); return Task.FromResult(Credentials); }
+        public string? RefuseCredentialsWith { get; set; }
+        public Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken ct = default)
+        {
+            Calls.Add($"create {request.Code} {request.Name} supervisor={request.SupervisorCode}");
+            Maybe();
+            var created = Person(string.IsNullOrEmpty(request.Code) ? "Z-007" : request.Code, request.Name, request.SupervisorCode);
+            Employees.Add(created);
+            return Task.FromResult(created);
+        }
         public Task<EmployeeDto> UpdateEmployeeAsync(string code, UpdateEmployeeRequest request, CancellationToken ct = default)
         {
             Calls.Add($"update {code} {request.Name} supervisor={request.SupervisorCode}");
@@ -178,7 +187,12 @@ public class EmployeeViewModelTests
         }
         public Task<ImportPreviewDto> PreviewImportAsync(string csv, CancellationToken ct = default) { Calls.Add("preview"); return Task.FromResult(Preview); }
         public Task<ImportResultDto> ImportAsync(string csv, CancellationToken ct = default) { Calls.Add("import"); return Task.FromResult(new ImportResultDto(2, 1, 0)); }
-        public Task SetCredentialsAsync(string code, SetCredentialsRequest request, CancellationToken ct = default) { Calls.Add($"set {code} {request.Username} {request.MustChange}"); Maybe(); return Task.CompletedTask; }
+        public Task SetCredentialsAsync(string code, SetCredentialsRequest request, CancellationToken ct = default) {
+            Calls.Add($"set {code} {request.Username} {request.MustChange}");
+            Maybe();
+            if (RefuseCredentialsWith != null) throw new ApiException(HttpStatusCode.Conflict, RefuseCredentialsWith, RefuseCredentialsWith);
+            return Task.CompletedTask;
+        }
         public Task RemoveCredentialsAsync(string code, CancellationToken ct = default) { Calls.Add($"remove {code}"); Maybe(); return Task.CompletedTask; }
         public bool AuditIntact { get; set; } = true;
         public Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default) =>
@@ -906,6 +920,195 @@ public class EmployeeViewModelTests
         StringAssert.Contains(vm.ErrorText, "77");
     }
 
+    [TestMethod]
+    public async Task AnAdministrator_GetsOnlyTheAdministration_AndNoTimesheetIsLoadedForThem()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new() { Person("Z-000", "Administrator", admin: true), Person("Z-001", "Amra Adžamija", "Z-002"), Person("Z-002", "Benjamin Bašić") };
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsTrue(vm.IsConnected);
+        Assert.IsTrue(vm.IsAdmin);
+        Assert.IsTrue(vm.InAdmin, "the administration is all there is");
+        Assert.AreEqual(3, vm.Admin.Rows.Count);
+        Assert.IsFalse(client.Calls.Any(c => c.StartsWith("sheet") || c == "pending" || c == "reminders"), "nothing of a timesheet is asked for: " + string.Join(", ", client.Calls));
+        Assert.IsFalse(vm.Reminders.HasAny);
+    }
+
+    [TestMethod]
+    public async Task AddingAPerson_CreatesThem_ThenGivesTheUserName_AndReloads()
+    {
+        var (vm, client, dialogs, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new() { Person("Z-002", "Benjamin Bašić") };
+        await vm.LoadCommand.ExecuteAsync(null);
+        admin.Calls.Clear();
+
+        dialogs.AdminEdit = new AdminEditResult(new UpdateEmployeeRequest(null, null, null, null, null, null, null, null),
+            new SetCredentialsRequest("nova", "Start-password-1", true), RemoveCredentials: false, new CreateEmployeeRequest("", "Nova Osoba", "Z-002"));
+        await vm.AddEmployeeCommand.ExecuteAsync(null);
+
+        StringAssert.Contains(dialogs.Asked.Last(), "Nova osoba");
+        CollectionAssert.AreEqual(new[] { "create  Nova Osoba supervisor=Z-002", "set Z-007 nova True", "employees", "credentials" }, admin.Calls);
+        Assert.AreEqual("Dodano: Nova Osoba (Z-007).", vm.InfoText);
+        Assert.IsTrue(vm.Admin.Rows.Any(r => r.Code == "Z-007"));
+    }
+
+    [TestMethod]
+    public async Task AddingAPerson_WhoseUserNameIsRefused_StillShowsThem_AndSaysWhatIsMissing()
+    {
+        var (vm, client, dialogs, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        admin.RefuseCredentialsWith = "username-taken";
+        dialogs.AdminEdit = new AdminEditResult(new UpdateEmployeeRequest(null, null, null, null, null, null, null, null),
+            new SetCredentialsRequest("amra", "Start-password-1", true), RemoveCredentials: false, new CreateEmployeeRequest("", "Nova Osoba"));
+        await vm.AddEmployeeCommand.ExecuteAsync(null);
+
+        StringAssert.Contains(vm.ErrorText, "Z-007");
+        StringAssert.Contains(vm.ErrorText, "već ima to korisničko ime");
+        Assert.IsTrue(vm.Admin.Rows.Any(r => r.Code == "Z-007"), "the person exists now, so the list shows them");
+        Assert.IsFalse(vm.IsBusy);
+    }
+
+    [TestMethod]
+    public async Task AddingAPerson_ThatTheServerRefuses_IsExplained_AndACancelledDialogAddsNothing()
+    {
+        var (vm, client, dialogs, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+        admin.Calls.Clear();
+
+        dialogs.AdminEdit = null;
+        await vm.AddEmployeeCommand.ExecuteAsync(null);
+        CollectionAssert.AreEqual(new string[0], admin.Calls);
+
+        admin.RefuseWith = "code-taken";
+        dialogs.AdminEdit = new AdminEditResult(new UpdateEmployeeRequest(null, null, null, null, null, null, null, null), null, false, new CreateEmployeeRequest("Z-001", "Dupli"));
+        await vm.AddEmployeeCommand.ExecuteAsync(null);
+        StringAssert.Contains(vm.ErrorText, "šifra već pripada");
+    }
+
+    [TestMethod]
+    public void TheDialogOfANewPerson_AsksForTheNameFirst_AndBuildsTheRequest()
+    {
+        var people = new List<EmployeeDto> { Person("Z-002", "Benjamin Bašić") };
+        var dialog = new AdminEmployeeViewModel(null, people);
+
+        Assert.IsTrue(dialog.IsNew);
+        Assert.IsFalse(dialog.IsExisting);
+        Assert.AreEqual("Nova osoba", dialog.Title);
+
+        dialog.SaveCommand.Execute(null);
+        Assert.IsNull(dialog.Result, "without a name nothing is saved");
+        StringAssert.Contains(dialog.Error, "Ime");
+
+        dialog.Name = "Nova Osoba";
+        dialog.Username = "nova";
+        dialog.SaveCommand.Execute(null);
+        StringAssert.Contains(dialog.Error, "prvu lozinku", "a new user name needs its first password");
+
+        dialog.NewPassword = "Start-password-1";
+        dialog.Supervisor = dialog.People.First(p => p.Code == "Z-002");
+        dialog.Email = "nova@firma.ba";
+        dialog.SaveCommand.Execute(null);
+
+        Assert.IsNotNull(dialog.Result?.Create);
+        Assert.AreEqual("Nova Osoba", dialog.Result!.Create!.Name);
+        Assert.AreEqual("Z-002", dialog.Result.Create.SupervisorCode);
+        Assert.AreEqual("nova@firma.ba", dialog.Result.Create.Email);
+        Assert.AreEqual("nova", dialog.Result.SetCredentials!.Username);
+    }
+
+    [TestMethod]
+    public async Task TheChartOfTheHierarchy_PutsTheBossOnTop_AndTheirPeopleBelow()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new()
+        {
+            Person("Z-000", "Administrator", admin: true),
+            Person("Z-003", "Selma Mujkić"),
+            Person("Z-002", "Tarik Begić", "Z-003"),
+            Person("Z-006", "Nermin Čolić", "Z-003"),
+            Person("Z-001", "Lejla Hadžić", "Z-002"),
+            Person("Z-004", "Haris Delić", "Z-002"),
+            Person("Z-005", "Maja Perić", "Z-002"),
+        };
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        CollectionAssert.AreEqual(new[] { "Administrator", "Selma Mujkić" }, vm.Admin.Chart.Select(n => n.Name).ToArray(), "everybody with nobody above is a top");
+        var selma = vm.Admin.Chart.Single(n => n.Code == "Z-003");
+        CollectionAssert.AreEqual(new[] { "Nermin Čolić", "Tarik Begić" }, selma.Children.Select(n => n.Name).ToArray());
+        Assert.AreEqual(5, selma.Descendants);
+        Assert.AreEqual("Z-003 · podređenih: 5", selma.Caption);
+
+        var tarik = selma.Children.Single(n => n.Code == "Z-002");
+        Assert.AreEqual(3, tarik.Children.Count);
+        Assert.AreEqual(0, tarik.Children[0].Descendants);
+        Assert.AreEqual("Z-004", tarik.Children[0].Caption, "by name: Haris, Lejla, Maja");
+
+        // The lines: the first box of a row has no line to its left, the last none to its right
+        Assert.IsTrue(selma.Children[0].IsFirst);
+        Assert.IsFalse(selma.Children[0].IsLast);
+        Assert.IsTrue(selma.Children[1].IsLast);
+        Assert.IsTrue(tarik.HasParent);
+        Assert.IsFalse(selma.HasParent);
+        Assert.IsTrue(tarik.ShowChildren, "a small company is shown open");
+    }
+
+    [TestMethod]
+    public async Task ABoxClosedInTheChart_StaysClosed_AfterARefresh_AndAnUnknownSupervisorMakesATop()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new() { Person("Z-002", "Tarik Begić"), Person("Z-001", "Lejla Hadžić", "Z-002"), Person("Z-009", "Sama Samić", "Z-404") };
+        await vm.LoadCommand.ExecuteAsync(null);
+        Assert.AreEqual(2, vm.Admin.Chart.Count, "a supervisor who is not in the list leaves the person at the top");
+
+        vm.Admin.Chart.Single(n => n.Code == "Z-002").ToggleCommand.Execute(null);
+        Assert.IsFalse(vm.Admin.Chart.Single(n => n.Code == "Z-002").ShowChildren);
+
+        await vm.ShowAdminCommand.ExecuteAsync(null);
+        Assert.IsFalse(vm.Admin.Chart.Single(n => n.Code == "Z-002").ShowChildren, "the choice survives the refresh");
+    }
+
+    [TestMethod]
+    public async Task TheTableAndTheChart_AreTwoViewsOfTheSamePeople_AndTheTableIsTheDefault()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsTrue(vm.Admin.ShowList);
+        vm.Admin.ShowChartViewCommand.Execute(null);
+        Assert.IsTrue(vm.Admin.ShowChart);
+        Assert.IsFalse(vm.Admin.ShowList);
+        vm.Admin.ShowListViewCommand.Execute(null);
+        Assert.IsTrue(vm.Admin.ShowList);
+    }
+
+    [TestMethod]
+    public async Task TheSignInForm_WaitsWhileASavedSignInIsTried_AndGoesAwayOnceSignedIn()
+    {
+        var withToken = new EmployeeViewModel(new FakeClient(), new FakeSession(), new FakeAdmin(), new FakeTokens { Token = "saved" }, new FakeDialogs(), new FakeSaver(),
+            new FakeShell(), new FakeUpdates(), new FakeServer(), NullLogger<EmployeeViewModel>.Instance);
+        Assert.IsTrue(withToken.IsRestoring);
+        Assert.IsFalse(withToken.ShowSignInForm, "no flash of the form while the saved sign-in is being tried");
+
+        await withToken.LoadCommand.ExecuteAsync(null);
+        Assert.IsFalse(withToken.IsRestoring);
+        Assert.IsFalse(withToken.ShowSignInForm, "signed in: the form has gone");
+
+        var (fresh, _, _, _, _) = Create();
+        Assert.IsFalse(fresh.IsRestoring);
+        Assert.IsTrue(fresh.ShowSignInForm, "nothing saved: the form is there at once, even before the server has answered");
+    }
+
     // ---- deputies ---------------------------------------------------------------------------------------------------------------------------
 
     [TestMethod]
@@ -1126,12 +1329,14 @@ public class EmployeeViewModelTests
         var (vm, client, _, _, _) = CreateWith(out var session, out _, out var admin);
         session.PasswordSignIn = true;
         client.IsApprover = true;
-        client.IsAdmin = true;
         client.Pending.Add(new PendingApprovalDto("Z-004", "Dario Kovačević", 2026, 9, 1, 0, DateTime.UtcNow, 0, 1));
         client.Reminders.Add(new ReminderDto(ReminderType.SubmitOverdue, 2026, 8, 1, new DateOnly(2026, 8, 25)));
         client.Team = new() { Member("Z-004", "Dario Kovačević", SheetStatus.Draft) };
         admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
         await vm.LoadCommand.ExecuteAsync(null);
+        await vm.ShowAdminCommand.ExecuteAsync(null);
+        Assert.AreEqual(1, vm.Admin.Rows.Count);
+        vm.IsAdmin = true;
         await vm.ShowTeamCommand.ExecuteAsync(null);
         Assert.IsTrue(vm.Reminders.HasAny);
         Assert.AreNotEqual("", vm.WhoText);

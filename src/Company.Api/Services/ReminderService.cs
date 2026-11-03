@@ -37,7 +37,8 @@ public sealed class ReminderService
         var items = new List<ReminderDto>();
 
         var employee = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Code == employeeCode);
-        if (employee == null || !employee.IsActive) return new RemindersDto(today, items);
+        // An administrator only administers: there is no timesheet of theirs to remind them about
+        if (employee == null || !employee.IsActive || employee.IsAdmin) return new RemindersDto(today, items);
 
         // Returned sheets wait for the employee whatever the month
         var returned = await _db.Sheets.AsNoTracking().Where(s => s.EmployeeCode == employeeCode && s.Status == TimesheetStatus.Returned)

@@ -29,6 +29,8 @@ public interface ICompanyAdminClient
 {
     Task<List<EmployeeDto>> GetEmployeesAsync(CancellationToken ct = default);
 
+    Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken ct = default);
+
     Task<EmployeeDto> UpdateEmployeeAsync(string code, UpdateEmployeeRequest request, CancellationToken ct = default);
 
     Task<ImportPreviewDto> PreviewImportAsync(string csv, CancellationToken ct = default);

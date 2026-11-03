@@ -26,6 +26,49 @@ public sealed class EmployeeAdminService
         _cache = cache;
     }
 
+    /// <summary>Adds a person. The code is the one given, or the next free Z-nnn; the supervisor must already exist.</summary>
+    public async Task<Employee> CreateAsync(CreateEmployeeRequest request)
+    {
+        var name = Limits.Check(request.Name, Limits.Name, "The name");
+        if (name.Length == 0) throw new SheetException(400, "name-required", "The name cannot be empty.");
+
+        var code = Limits.Check(request.Code, Limits.Code, "The code");
+        if (code.Length == 0) code = await NextCodeAsync();
+        else if (code.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.')))
+            throw new SheetException(400, "invalid-code", "The code can have letters, digits, dash, dot or underscore.");
+        if (await _db.Employees.AnyAsync(e => e.Code == code))
+            throw new SheetException(409, "code-taken", $"Code {code} already belongs to somebody else.");
+
+        var supervisor = Clear(request.SupervisorCode ?? "");
+        if (supervisor != null && !await _db.Employees.AnyAsync(e => e.Code == supervisor))
+            throw new SheetException(400, "unknown-person", "The supervisor is not an employee.");
+
+        var email = Clear(request.Email ?? "");
+        if (email != null && (email.Length > 200 || !email.Contains('@') || email.Contains(' ')))
+            throw new SheetException(400, "invalid-email", "The e-mail address is not valid.");
+        if (request.ActiveFrom != null && request.ActiveTo != null && request.ActiveTo < request.ActiveFrom)
+            throw new SheetException(400, "invalid-period", "The end of employment is before its start.");
+
+        var employee = new Employee
+        {
+            Code = code, Name = name, SupervisorCode = supervisor, Email = email, IsAdmin = request.IsAdmin,
+            ActiveFrom = request.ActiveFrom, ActiveTo = request.ActiveTo
+        };
+        _db.Employees.Add(employee);
+        _audit.Record("EmployeeCreated", "Employee", code, Describe(employee));
+        await _db.SaveChangesAsync();
+        _cache.Clear();
+        return employee;
+    }
+
+    /// <summary>The next Z-nnn after the highest one in use (people whose codes do not look like that are ignored)</summary>
+    private async Task<string> NextCodeAsync()
+    {
+        var codes = await _db.Employees.AsNoTracking().Select(e => e.Code).ToListAsync();
+        var highest = codes.Where(c => c.StartsWith("Z-") && int.TryParse(c.AsSpan(2), out _)).Select(c => int.Parse(c.AsSpan(2))).DefaultIfEmpty(0).Max();
+        return $"Z-{highest + 1:000}";
+    }
+
     public async Task<Employee> UpdateAsync(string code, UpdateEmployeeRequest request)
     {
         var employee = await _db.Employees.Include(e => e.Accounts).FirstOrDefaultAsync(e => e.Code == code)

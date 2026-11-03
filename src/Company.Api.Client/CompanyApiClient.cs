@@ -112,6 +112,9 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public Task<List<EmployeeDto>> GetEmployeesAsync(CancellationToken ct = default) => GetAsync<List<EmployeeDto>>("/api/admin/employees", ct);
 
+    public Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken ct = default) =>
+        SendAsync<EmployeeDto>(HttpMethod.Post, "/api/admin/employees", request, ct);
+
     public Task<EmployeeDto> UpdateEmployeeAsync(string code, UpdateEmployeeRequest request, CancellationToken ct = default) =>
         SendAsync<EmployeeDto>(HttpMethod.Put, $"/api/admin/employees/{Uri.EscapeDataString(code)}", request, ct);
 

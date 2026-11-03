@@ -160,6 +160,7 @@ public partial class EmployeeViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowTeamToolbar));
         OnPropertyChanged(nameof(ShowReviewToolbar));
         OnPropertyChanged(nameof(ShowApprovalsHint));
+        OnPropertyChanged(nameof(ShowSignInForm));
     }
 
     public bool HasError => ErrorText.Length > 0;
@@ -180,12 +181,26 @@ public partial class EmployeeViewModel : ObservableObject
         _shell = shell;
         _logger = logger;
         MonthTitle = EmployeeFormat.Month(Year, Month);
+        IsRestoring = tokens.Load() != null;
     }
 
     // ---- Loading ---------------------------------------------------------------------------------------------------
 
+    /// <summary>A sign-in saved by "remember me" is being tried: the sign-in window waits instead of showing its form for a moment</summary>
+    [ObservableProperty] private bool _isRestoring;
+
     [RelayCommand]
-    public Task LoadAsync() => LoadCoreAsync();
+    public async Task LoadAsync()
+    {
+        try
+        {
+            await LoadCoreAsync();
+        }
+        finally
+        {
+            IsRestoring = false;
+        }
+    }
 
     /// <summary>Loads the month on screen; false when the server refused, was out of reach, or another call was still running</summary>
     private Task<bool> LoadCoreAsync()
@@ -206,15 +221,23 @@ public partial class EmployeeViewModel : ObservableObject
                 IsAdmin = me.IsAdmin;
             }
 
+            // An administrator only administers: no timesheet is loaded for them, the administration is all there is
+            if (IsAdmin)
+            {
+                InAdmin = true;
+                await Admin.RefreshAsync(_admin);
+                return null;
+            }
+
             return await LoadCurrentAsync();
         }, connecting: true, refreshPending: true);
 
-    private Task<SheetDto> LoadCurrentAsync() => _reviewCode == null
-        ? _client.GetSheetAsync(Year, Month)
-        : _client.GetReviewAsync(_reviewCode, Year, Month);
+    private async Task<SheetDto?> LoadCurrentAsync() => _reviewCode == null
+        ? await _client.GetSheetAsync(Year, Month)
+        : await _client.GetReviewAsync(_reviewCode, Year, Month);
 
     /// <summary>Runs one call, shows the new state of the month, and turns a refusal into a message instead of an exception</summary>
-    private async Task<bool> RunAsync(Func<Task<SheetDto>> call, bool connecting = false, bool refreshPending = false)
+    private async Task<bool> RunAsync(Func<Task<SheetDto?>> call, bool connecting = false, bool refreshPending = false)
     {
         if (IsBusy) return false;
         try
@@ -222,9 +245,9 @@ public partial class EmployeeViewModel : ObservableObject
             IsBusy = true;
             ErrorText = "";
             InfoText = "";
-            Show(await call());
+            if (await call() is { } sheet) Show(sheet);
             IsConnected = true;
-            if (refreshPending) await RefreshPendingAsync();
+            if (refreshPending && !IsAdmin) await RefreshPendingAsync();
             return true;
         }
         catch (ApiException ex) when (NeedsSignInAgain(ex))
@@ -741,6 +764,38 @@ public partial class EmployeeViewModel : ObservableObject
         await RunAdminAsync(() => Admin.RefreshAsync(_admin));
     }
 
+    /// <summary>A new person: the dialog asks for the data and, if wanted, the user name and first password; then the person is added</summary>
+    [RelayCommand]
+    private async Task AddEmployeeAsync()
+    {
+        var result = await _dialogs.AdminEditAsync(new AdminEmployeeViewModel(null, Admin.Employees));
+        if (result?.Create == null) return;
+
+        await RunAdminAsync(async () =>
+        {
+            var created = await _admin.CreateEmployeeAsync(result.Create);
+            if (result.SetCredentials != null)
+            {
+                try
+                {
+                    await _admin.SetCredentialsAsync(created.Code, result.SetCredentials);
+                }
+                catch (ApiException ex)
+                {
+                    // The person exists now: show them, and say what is still missing
+                    await Admin.RefreshAsync(_admin);
+                    ErrorText = $"Osoba je dodana ({created.Code}), ali korisničko ime nije postavljeno: {AdminViewModel.Refusal(ex)} Otvorite osobu i pokušajte ponovo.";
+                    return;
+                }
+            }
+
+            InfoText = result.SetCredentials == null
+                ? $"Dodano: {created.Name} ({created.Code}). Korisničko ime još nije postavljeno."
+                : $"Dodano: {created.Name} ({created.Code}).";
+            await Admin.RefreshAsync(_admin);
+        });
+    }
+
     [RelayCommand]
     private async Task EditEmployeeAsync(AdminRow? row)
     {
@@ -882,9 +937,22 @@ public partial class EmployeeViewModel : ObservableObject
 
     public bool ShowLoginForm => NeedsSignIn && !MustChangePassword;
 
+    /// <summary>
+    /// The form of the sign-in window: shown whenever nobody is signed in, the first password is not being chosen, and no saved sign-in
+    /// is being tried. (Not tied to the server having said "unauthorized": with the server out of reach the form must still be there, to
+    /// change the server's address.)
+    /// </summary>
+    public bool ShowSignInForm => !IsConnected && !MustChangePassword && !IsRestoring;
+
     partial void OnNeedsSignInChanged(bool value) => OnPropertyChanged(nameof(ShowLoginForm));
 
-    partial void OnMustChangePasswordChanged(bool value) => OnPropertyChanged(nameof(ShowLoginForm));
+    partial void OnMustChangePasswordChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowLoginForm));
+        OnPropertyChanged(nameof(ShowSignInForm));
+    }
+
+    partial void OnIsRestoringChanged(bool value) => OnPropertyChanged(nameof(ShowSignInForm));
 
     private string? _pendingToken;
 

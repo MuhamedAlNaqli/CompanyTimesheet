@@ -60,6 +60,16 @@ public sealed record LoginResultDto(string Token, DateTime ExpiresUtc, bool Must
 
 public sealed record ChangePasswordRequest(string Current, string New);
 
+/// <summary>A new person. An empty code is chosen by the server (the next free Z-nnn).</summary>
+public sealed record CreateEmployeeRequest(
+    string? Code,
+    string Name,
+    string? SupervisorCode = null,
+    string? Email = null,
+    bool IsAdmin = false,
+    DateOnly? ActiveFrom = null,
+    DateOnly? ActiveTo = null);
+
 /// <summary>The administrator creates or replaces an employee's user name and password. MustChange: the employee chooses their own at the first sign-in.</summary>
 public sealed record SetCredentialsRequest(string Username, string Password, bool MustChange = true);
 

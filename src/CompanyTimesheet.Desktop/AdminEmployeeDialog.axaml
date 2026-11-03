@@ -8,6 +8,9 @@
         <StackPanel Margin="28,24" Spacing="12">
             <TextBlock Name="AdminDialogTitle" Text="{Binding Title}" Classes="title"/>
 
+            <TextBlock Text="Šifra (ostavite prazno da se dodijeli sljedeća slobodna)" Classes="label" IsVisible="{Binding IsNew}"/>
+            <TextBox Name="AdminCode" Classes="form" Text="{Binding Code}" Watermark="npr. Z-007" IsVisible="{Binding IsNew}"/>
+
             <TextBlock Text="Ime i prezime" Classes="label"/>
             <TextBox Name="AdminName" Classes="form" Text="{Binding Name}"/>
 
@@ -15,15 +18,15 @@
             <TextBox Name="AdminEmail" Classes="form" Text="{Binding Email}"/>
 
             <StackPanel Orientation="Horizontal" Spacing="24">
-                <CheckBox Name="AdminActive" IsChecked="{Binding IsActive}" Content="Aktivan"/>
+                <CheckBox Name="AdminActive" IsChecked="{Binding IsActive}" Content="Aktivan" IsVisible="{Binding IsExisting}"/>
                 <CheckBox Name="AdminIsAdmin" IsChecked="{Binding IsAdmin}" Content="Administrator"/>
             </StackPanel>
 
             <TextBlock Text="Nadređeni" Classes="label"/>
             <ComboBox Name="AdminSupervisor" ItemsSource="{Binding People}" SelectedItem="{Binding Supervisor}" HorizontalAlignment="Stretch"/>
 
-            <TextBlock Text="Određeni odobravatelj (ako nema nadređenog)" Classes="label"/>
-            <ComboBox Name="AdminDesignated" ItemsSource="{Binding People}" SelectedItem="{Binding Designated}" HorizontalAlignment="Stretch"/>
+            <TextBlock Text="Određeni odobravatelj (ako nema nadređenog)" Classes="label" IsVisible="{Binding IsExisting}"/>
+            <ComboBox Name="AdminDesignated" ItemsSource="{Binding People}" SelectedItem="{Binding Designated}" HorizontalAlignment="Stretch" IsVisible="{Binding IsExisting}"/>
 
             <StackPanel Orientation="Horizontal" Spacing="16">
                 <StackPanel Spacing="6">

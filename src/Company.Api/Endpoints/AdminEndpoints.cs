@@ -29,6 +29,9 @@ public static class AdminEndpoints
             return employee == null ? NotFound("employee") : Results.Ok(ToDto(employee));
         });
 
+        admin.MapPost("/employees", (CreateEmployeeRequest request, EmployeeAdminService service) =>
+            Run(async () => ToDto(await service.CreateAsync(request))));
+
         admin.MapPut("/employees/{code}", (string code, UpdateEmployeeRequest request, EmployeeAdminService service) =>
             Run(async () => ToDto(await service.UpdateAsync(code, request))));
 

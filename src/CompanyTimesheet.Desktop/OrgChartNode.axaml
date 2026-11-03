@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:em="using:CompanyTimesheet.Desktop"
+             x:Class="CompanyTimesheet.Desktop.OrgChartNode"
+             x:DataType="em:OrgNode">
+
+    <!-- One person and, below, the people who report to them. The lines are drawn by the boxes themselves: each box has a short line
+         up and, between the first and the last of its row, a line to the left and to the right. -->
+    <StackPanel HorizontalAlignment="Center">
+
+        <Grid Height="16" IsVisible="{Binding HasParent}" ColumnDefinitions="*,*">
+            <Border Grid.Column="0" IsVisible="{Binding !IsFirst}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,1,0,0" VerticalAlignment="Top"/>
+            <Border Grid.Column="1" IsVisible="{Binding !IsLast}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,1,0,0" VerticalAlignment="Top"/>
+            <Border Grid.ColumnSpan="2" Width="1" HorizontalAlignment="Center" Background="{DynamicResource AppBorderStrong}"/>
+        </Grid>
+
+        <Button Name="OrgBox" Margin="6,0" Padding="12,8" MinWidth="170" MaxWidth="220" HorizontalAlignment="Center" HorizontalContentAlignment="Stretch"
+                Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" CornerRadius="10"
+                Command="{Binding $parent[Window].DataContext.EditEmployeeCommand}" CommandParameter="{Binding Row}"
+                ToolTip.Tip="Uredi osobu">
+            <StackPanel Spacing="1">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <materialIcons:MaterialIcon Kind="AccountOutline" Width="18" Height="18" Foreground="{DynamicResource AppTextMuted}"/>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource AppTextStrong}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding Caption}" FontSize="11" Foreground="{DynamicResource AppTextMuted}"/>
+                <TextBlock Text="Administrator" IsVisible="{Binding IsAdmin}" FontSize="11" Foreground="#B45309"/>
+                <TextBlock Text="Neaktivan" IsVisible="{Binding !IsActive}" FontSize="11" Foreground="#991B1B"/>
+            </StackPanel>
+        </Button>
+
+        <Button Name="OrgToggle" IsVisible="{Binding HasChildren}" Command="{Binding ToggleCommand}" Classes="secondary" Padding="0" MinHeight="22" Width="26" Height="22"
+                HorizontalAlignment="Center" Margin="0,4,0,0" CornerRadius="11" ToolTip.Tip="Prikaži ili sakrij podređene">
+            <Panel>
+                <materialIcons:MaterialIcon Kind="ChevronUp" Width="16" Height="16" IsVisible="{Binding IsExpanded}"/>
+                <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" IsVisible="{Binding !IsExpanded}"/>
+            </Panel>
+        </Button>
+
+        <Border Width="1" Height="12" IsVisible="{Binding ShowChildren}" HorizontalAlignment="Center" Background="{DynamicResource AppBorderStrong}"/>
+
+        <ItemsControl ItemsSource="{Binding Children}" IsVisible="{Binding ShowChildren}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="em:OrgNode">
+                    <em:OrgChartNode/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

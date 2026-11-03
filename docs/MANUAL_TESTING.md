@@ -41,6 +41,9 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 - Kao **Haris**: u *Za odobravanje* se vide šihtarice "kao zamjena za Tarik". Haris smije odobriti ili vratiti; u historiji piše ko je odlučio i za koga. Svoju šihtaricu ne smije odobriti.
 
 ### E. Administracija (admin)
+- Prijava `admin` otvara **samo administraciju**: administrator nema šihtaricu, ni podsjetnike, ni tabove za odobravanje. Prijavni prozor je zaseban; poslije prijave zamjenjuje ga prozor uloge, a *Odjava* vraća prijavni prozor.
+- *Nova osoba*: ime, (šifra: prazno = sljedeća slobodna Z-nnn), e-pošta, nadređeni, korisničko ime i prva lozinka. Nova osoba se odmah vidi u listi i u stablu, i može se prijaviti (pri prvoj prijavi bira svoju lozinku).
+- Tabela ima zaglavlja kolona (Šifra, Ime i prezime, Nadređeni, Korisničko ime i uloga). Dugme **Hijerarhija** pokazuje stablo: na vrhu osobe bez nadređenog, ispod njih podređeni; strelica ispod osobe otvara ili zatvara njene podređene, klik na osobu je uređuje.
 - *Administracija*: lista sa pretragom. *Uredi*: ime, e-pošta, nadređeni, uloge, datumi zaposlenja, korisničko ime i nova lozinka (opcija "mora izabrati svoju pri prvoj prijavi").
 - *Uvezi listu radnika*: izaberite `sample-employees.csv` iz foldera servera (Z-001…Z-006 već postoje; vidi se pregled "ažurirano").
 - Pokušaj da Selma dobije za nadređenog Lejlu mora biti odbijen (krug u hijerarhiji). *Provjeri revizijski dnevnik* → "u redu".
