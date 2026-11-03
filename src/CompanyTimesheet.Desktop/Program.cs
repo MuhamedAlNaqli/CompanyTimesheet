@@ -66,12 +66,15 @@ internal static class Program
             {
                 config.Sources.Clear();
                 config.SetBasePath(AppContext.BaseDirectory)
-                      .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                      .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
                       // The address of the company server, set by IT for this PC; not part of the program
-                      .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+                      .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: false)
                       .AddEnvironmentVariables()
                       .AddCommandLine(args);
             })
+            // The default host also starts console, debug and event-log logging and file watchers: nobody reads them in a windowed app,
+            // and they cost start-up time. Logs go to the file below.
+            .ConfigureLogging(logging => logging.ClearProviders())
             .UseSerilog((context, configuration) =>
             {
                 // The install folder is read-only for the user, so logs live in the user profile

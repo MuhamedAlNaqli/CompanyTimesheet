@@ -23,6 +23,9 @@
 
     <Feature Id="ProductFeature" Title="Evidencija radnog vremena" Level="1" Description="The application">
       <ComponentGroupRef Id="ProductComponents" />
+      <!-- Every file of the publish folder, listed by build-installer.ps1 (not one self-extracting exe: that unpacks 130 MB on the first start and is scanned again). -->
+      <!-- The address of the company server goes into appsettings.local.json, which is not part of the package, so an update keeps it. -->
+      <ComponentGroupRef Id="AppFiles" />
       <ComponentGroupRef Id="StartMenuShortcuts" />
     </Feature>
 
@@ -42,16 +45,8 @@
 
     <StandardDirectory Id="DesktopFolder" />
 
+
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      <Component Id="MainExecutable" Guid="1CCC7282-86B5-416C-A93E-9A11BFA3D4C2">
-        <File Id="CompanyTimesheetExe" Name="CompanyTimesheet.exe" Source="$(var.PublishDir)\CompanyTimesheet.exe" KeyPath="yes" />
-      </Component>
-
-      <!-- The defaults. The address of the company server goes into appsettings.local.json (not part of the package, so an update keeps it). -->
-      <Component Id="ConfigurationFiles" Guid="2765471E-F386-404B-9674-92584463177E">
-        <File Id="AppSettingsJson" Name="appsettings.json" Source="$(var.PublishDir)\appsettings.json" KeyPath="yes" />
-      </Component>
-
       <Component Id="RegistryEntries" Guid="170B0B63-E5A4-4880-9AE5-4C455E335EEF">
         <RegistryKey Root="HKLM" Key="SOFTWARE\SmartPoint\CompanyTimesheet">
           <RegistryValue Name="Version" Type="string" Value="$(var.Version)" KeyPath="yes" />

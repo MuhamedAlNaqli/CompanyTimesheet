@@ -2,7 +2,7 @@
 #
 #   .\installer\build-installer.ps1 -Version 0.1.0.0
 #
-# Publishes the app as one self-contained exe and wraps it in an MSI. The MSI is also what the in-app update downloads.
+# Publishes the app as a self-contained folder and wraps it in an MSI. The MSI is also what the in-app update downloads.
 param(
     [string]$Configuration = "Release",
     [string]$RuntimeIdentifier = "win-x64",
@@ -42,7 +42,7 @@ if (-not $SkipPublish) {
     Write-Host "Publishing..." -ForegroundColor Yellow
     if (Test-Path $PublishPath) { Remove-Item -Recurse -Force "$PublishPath\*" }
     & dotnet publish $ProjectPath -c $Configuration -r $RuntimeIdentifier --self-contained true --output $PublishPath `
-        /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false /p:DebugType=embedded `
+        /p:PublishSingleFile=false /p:PublishTrimmed=false /p:DebugType=embedded `
         "/p:AssemblyVersion=$Version" "/p:FileVersion=$Version" --verbosity quiet
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 }
@@ -54,8 +54,21 @@ foreach ($file in "CompanyTimesheet.exe", "appsettings.json") {
 # Signed before it goes into the MSI (a no-op without SIGNING_PFX_BASE64 in the environment)
 & "$ScriptRoot\sign.ps1" "$PublishPath\CompanyTimesheet.exe"
 
+# One component per file of the publish folder (WiX 4 cannot harvest a folder by itself)
+$FilesWxs = Join-Path $OutputPath "AppFiles.wxs"
+$lines = @('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"><Fragment><ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">')
+$n = 0
+foreach ($f in Get-ChildItem $PublishPath -File) {
+    $n++
+    $name = [System.Security.SecurityElement]::Escape($f.Name)
+    $lines += "<Component Id=`"c$n`" Guid=`"*`"><File Id=`"f$n`" Name=`"$name`" Source=`"`$(var.PublishDir)\$name`" KeyPath=`"yes`" /></Component>"
+}
+$lines += '</ComponentGroup></Fragment></Wix>'
+Set-Content -Path $FilesWxs -Value $lines -Encoding UTF8
+Write-Host "$n files listed for the MSI."
+
 Write-Host "Building the MSI..." -ForegroundColor Yellow
-& wix build $WxsFile -out $MsiOutput -arch x64 -dcl high -d "PublishDir=$PublishPath" -d "Version=$Version"
+& wix build $WxsFile $FilesWxs -out $MsiOutput -arch x64 -dcl high -d "PublishDir=$PublishPath" -d "Version=$Version"
 if ($LASTEXITCODE -ne 0) { throw "wix build failed" }
 
 & "$ScriptRoot\sign.ps1" $MsiOutput
