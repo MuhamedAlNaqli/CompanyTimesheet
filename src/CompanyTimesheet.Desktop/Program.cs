@@ -85,12 +85,11 @@ internal static class Program
                 // memory, and in a protected file with "remember me"). Windows sign-in is switched off unless Company:WindowsLogin is
                 // true. Created on first use, so a missing address is shown in the window.
                 services.AddSingleton<IEmployeeSignInStore, ProtectedSignInStore>();
+                services.AddSingleton<IServerSettings, ServerSettings>();
                 services.AddSingleton(sp =>
                 {
                     var configuration = sp.GetRequiredService<IConfiguration>();
-                    var address = configuration["Company:ApiUrl"];
-                    if (string.IsNullOrWhiteSpace(address))
-                        throw new InvalidOperationException("The company server address is not set. Ask IT for it and set Company:ApiUrl in appsettings.local.json.");
+                    var address = sp.GetRequiredService<IServerSettings>().Address;
 
                     var windows = configuration.GetValue<bool>("Company:WindowsLogin");
                     var http = windows

@@ -51,9 +51,14 @@ foreach ($file in "CompanyTimesheet.exe", "appsettings.json") {
     if (-not (Test-Path (Join-Path $PublishPath $file))) { throw "Required file missing in the publish folder: $file" }
 }
 
+# Signed before it goes into the MSI (a no-op without SIGNING_PFX_BASE64 in the environment)
+& "$ScriptRoot\sign.ps1" "$PublishPath\CompanyTimesheet.exe"
+
 Write-Host "Building the MSI..." -ForegroundColor Yellow
 & wix build $WxsFile -out $MsiOutput -arch x64 -dcl high -d "PublishDir=$PublishPath" -d "Version=$Version"
 if ($LASTEXITCODE -ne 0) { throw "wix build failed" }
+
+& "$ScriptRoot\sign.ps1" $MsiOutput
 
 $msi = Get-Item $MsiOutput
 Write-Host ("Created {0} ({1:N1} MB)" -f $msi.Name, ($msi.Length / 1MB)) -ForegroundColor Green

@@ -22,6 +22,9 @@ permissions:
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_PATH: 'CompanyTimesheet.sln'
+  # The signing certificate (see docs/RELEASING.md). Without these secrets the files are released unsigned.
+  SIGNING_PFX_BASE64: ${{ secrets.SIGNING_PFX_BASE64 }}
+  SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
 
 jobs:
   release:
@@ -74,6 +77,7 @@ jobs:
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=embedded `
           "-p:AssemblyVersion=${{ steps.version.outputs.assembly }}" --verbosity minimal
         if ($LASTEXITCODE -ne 0) { throw "dotnet publish of the server failed" }
+        ./installer/sign.ps1 publish/server/Company.Api.exe
         Copy-Item server-test/* publish/server/
         Remove-Item publish/server/appsettings.Development.json, publish/server/web.config, publish/server/*.staticwebassets.endpoints.json -ErrorAction SilentlyContinue
         Compress-Archive -Path publish/server/* -DestinationPath "installer/output/CompanyTimesheet-Server-v$version-win-x64.zip"
@@ -134,7 +138,7 @@ jobs:
         $flags = @()
         if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $flags += '--prerelease' }
         $zip = (Get-ChildItem installer/output -Filter *.zip | Select-Object -First 1).FullName
-        gh release create "${{ github.ref_name }}" "${{ steps.files.outputs.msi }}" "$zip" "installer/output/appcast.xml" `
+        gh release create "${{ github.ref_name }}" "${{ steps.files.outputs.msi }}" "$zip" "installer/output/appcast.xml" "installer/SmartPoint-test-signing.cer" "installer/trust-test-certificate.ps1" `
           --title "Evidencija radnog vremena ${{ github.ref_name }}" --notes-file release-notes.md @flags
 
     - name: Keep the MSI of a manual run

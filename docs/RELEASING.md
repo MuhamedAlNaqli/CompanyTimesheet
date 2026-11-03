@@ -43,3 +43,19 @@ To build the MSI on your own PC (needs `dotnet tool install --global wix --versi
 - The feed must be public: a private GitHub repository cannot serve `releases/latest/download/appcast.xml` to the app.
 - Until the first release exists, the address answers 404 and the app only says that the update server could not be reached.
 - An update installs a new version; it never changes the data on the company server.
+
+## Signing (Authenticode)
+
+`installer/sign.ps1` signs the app exe, the MSI and the server exe (SHA-256 with a timestamp) when the environment holds `SIGNING_PFX_BASE64`
+(the .pfx, base64) and `SIGNING_PFX_PASSWORD`. In the release workflow they come from the repository secrets of the same names; without them the
+files are released unsigned. `build-installer.ps1` calls it, so a local build signs the same way.
+
+- **Now: a test certificate** (`CN=Smart Point (test signing)`, self-signed, valid until 2029-11-03). The public part is `installer/SmartPoint-test-signing.cer`.
+  The private key (.pfx and its password) is kept outside the repository (`E:\Internal Projects\CompanyTimesheet-signing`) and is never committed.
+  A computer that runs `installer/trust-test-certificate.ps1` once (as administrator) trusts it and shows "Smart Point (test signing)" as the publisher.
+  **On any other computer the warning stays**, because a certificate you made yourself is trusted by nobody else.
+- **For everybody: a real certificate.** SmartScreen and "unknown publisher" go away only with a certificate from a certificate authority.
+  Options: *Azure Trusted Signing* (about 10 USD a month, needs identity validation), *SignPath Foundation* (free for open-source projects, needs an application),
+  or an OV/EV certificate from a CA (paid; EV gives reputation at once). Put the resulting .pfx in the two secrets above; nothing else changes.
+- To set the secrets for a new certificate: `gh secret set SIGNING_PFX_BASE64 < file-with-base64` and `gh secret set SIGNING_PFX_PASSWORD`.
+

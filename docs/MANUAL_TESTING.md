@@ -1,102 +1,74 @@
-# Ručno testiranje (verzija 0.1.0)
+# Ručno testiranje
 
-Ovako se aplikacija isprobava na jednom računaru, bez firminog servera. Treba vam dvoje: **aplikacija** (MSI) i **probni server**
-(zip) iz iste verzije na stranici *Releases*. Server pamti podatke u jednoj SQLite datoteci na vašem računaru; ništa ne ide na internet.
+Najkraći put do probe na jednom računaru: **tri koraka**, bez podešavanja.
 
-## 1. Priprema (jednom)
+## 1. Priprema
 
-1. **Skinite** s https://github.com/MuhamedAlNaqli/CompanyTimesheet/releases/latest dvije datoteke:
-   `CompanyTimesheet-v0.1.0.0-win-x64.msi` i `CompanyTimesheet-Server-v0.1.0-win-x64.zip`.
-2. **Server:** raspakujte zip u neki folder (npr. `C:\CompanyTimesheetServer`) i dvaput kliknite `start-test-server.cmd`. Prozor ostaje otvoren
-   dok testirate (zatvaranje prozora zaustavlja server). Provjera: u pregledniku otvorite http://localhost:5090/health, treba pisati `{"status":"ok"}`.
-   Baza je `%LOCALAPPDATA%\CompanyTimesheetTestServer\test.db`; brisanjem te datoteke počinjete ispočetka.
-3. **Aplikacija:** pokrenite MSI (traži administratorska prava). Windows može upozoriti ("Windows protected your PC" / SmartScreen) jer
-   program još nije potpisan: *More info → Run anyway*.
-4. **Adresa servera.** Aplikacija mora znati gdje je server. U PowerShellu (običan korisnik, bez administratora):
+1. Na stranici *Releases* skinite dvije datoteke: `CompanyTimesheet-v….msi` (aplikacija) i `CompanyTimesheet-Server-v….zip` (probni server).
+2. Raspakujte zip bilo gdje i dvaput kliknite **`start-test-server.cmd`**. Prozor ostaje otvoren dok testirate. Server odmah ima šest probnih osoba i dva predata mjeseca.
+3. Instalirajte MSI i pokrenite **Evidencija radnog vremena**. Adresa servera je već `http://localhost:5090` (mijenja se u aplikaciji, dugme *Server* na prijavnom ekranu).
 
-   ```powershell
-   setx Company__ApiUrl http://localhost:5090
-   ```
+**Probne osobe** (lozinka za sve: `Demo-password-1`): `lejla` (radnica), `haris` i `maja` (radnici), `tarik` (njihov nadređeni), `selma` (iznad Tarika),
+`nermin` (radnik kod Selme). Administrator: `admin` / `Admin-first-password-1` (traži izbor vlastite lozinke).
 
-   Zatim **zatvorite i ponovo otvorite** aplikaciju (varijabla se čita pri pokretanju). (Alternativa: datoteka
-   `C:\Program Files\SmartPoint\CompanyTimesheet\appsettings.local.json` sa sadržajem `{ "Company": { "ApiUrl": "http://localhost:5090" } }`.)
-5. Pokrenite **Evidencija radnog vremena** iz Start menija.
+> **Upozorenje Windowsa pri instalaciji.** Izdanja su potpisana probnim certifikatom koji vaš računar još ne poznaje. Jednom, kao administrator:
+> skinite sa releasea i pokrenite `trust-test-certificate.ps1` (desni klik na PowerShell → *Run as administrator*, pa `.\trust-test-certificate.ps1`).
+> Nakon toga Windows za ova izdanja prikazuje izdavača "Smart Point (test signing)". Bez toga: desni klik na MSI → *Properties* → *Unblock*, ili *More info → Run anyway*.
 
 ## 2. Scenariji
 
-Redom su; svaki se oslanja na prethodne. Uz svaki je napisano šta treba vidjeti.
+Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 
-### A. Prva prijava administratora
-- Prijava: korisničko ime `admin`, lozinka `Admin-first-password-1`.
-- **Očekivano:** odmah se traži izbor vlastite lozinke (najmanje 10 znakova). Kratka ili različita ponovljena lozinka daje poruku.
-  Nakon izbora ulazite u prozor; vidite tabove *Moja šihtarica*, *Za odobravanje* i **Administracija**.
+### A. Supervizor (Tarik)
+- Prijava `tarik`. Tab **Za odobravanje (2)**: Lejla i Maja su predale prošli mjesec.
+- *Otvori* Lejlinu šihtaricu: vidi se prekovremeni (19:30–22:00, "Podrška pri obračunu") i godišnji odmor od 15. do 17. *Vrati na ispravku…* (poruka je obavezna) ili *Odobri*.
+- Tab **Moj tim**: ko je predao tekući mjesec (Nije predano / Predano / Odobreno). *Podsjeti* uz osobu; drugi pokušaj: "Podsjetnik … je već poslan".
+- **Pregled za odobravanje** → *Kopiraj* → zalijepite u Notepad. Svako ima red; odsustva su periodi; prekovremeni su tabela s tabulatorima.
 
-### B. Administracija
-1. *Administracija → Uvezi listu radnika* i izaberite `sample-employees.csv` iz foldera servera. **Očekivano:** pitanje "Uvesti 6 od 6 redova?",
-   nakon potvrde poruka "Dodano: 6…" i šest osoba na listi (uz administratora).
-2. *Uredi* uz **Lejla Hadžić**: upišite korisničko ime `lejla` i lozinku `Privremena-1234` (prva lozinka; osoba je mijenja pri prvoj prijavi).
-   Isto za ostale: `tarik`, `selma`, `haris`, `maja`, `nermin` (svi lozinka `Privremena-1234`).
-3. Hijerarhija (polje *Nadređeni* u dijalogu): Lejla → Tarik, Haris → Tarik, Maja → Tarik, Tarik → Selma, Nermin → Selma. Selma nema nadređenog.
-   Pokušaj da Selma dobije za nadređenog Lejlu mora biti odbijen porukom o krugu u hijerarhiji.
-4. *Provjeri revizijski dnevnik* → "Revizijski dnevnik je u redu (N zapisa)."
-5. Pretraga: upišite dio imena ili korisničkog imena u polje za traženje; lista se sužava.
+### B. Radnik (Lejla)
+- Odjava, prijava `lejla`. Tekući mjesec već ima **8 sati za svaki radni dan** (nema "Popuni"). Vikendi i praznici su prazni.
+- Prekidač **lista / kalendar** gore desno (pamti se).
+- *Novi unos*: šifra odsustva + period od–do (vikendi se preskaču); šifra prekovremenog + vrijeme od–do + opis (opis je obavezan); službeno putovanje kao period.
+- Dan se mijenja klikom na njega; odsustvo se skida brisanjem i dan se vraća na standardan.
+- *Predaj na odobravanje* → Da/Ne. Mjesec se zaključava; piše ko je na redu.
 
-### C. Radnik: unos mjeseca (Lejla)
-- *Odjava*, pa prijava `lejla` / `Privremena-1234`. **Očekivano:** izbor vlastite lozinke, zatim prozor tekućeg mjeseca.
-- Svi **radni dani već imaju 8 sati** (nema dugmeta "Popuni"). Vikendi i državni praznici su prazni. Na desnoj strani: zbir mjeseca (fond 100%).
-- Prebacite **listu / kalendar** (dvije ikone gore desno); izbor se pamti.
-- *Novi unos*: izaberite šifru **odsustva** (npr. godišnji odmor), period od–do → prikaže se koji dani se uzimaju (vikendi se preskaču) → sačuvajte.
-  Dani dobijaju tu šifru; zbir ostaje 100% fonda.
-- *Novi unos* sa šifrom **prekovremenog**: datum, od–do (npr. 19:30–22:00), kratak opis → u desnom panelu se vidi razdioba sati po vrsti prekovremenog.
-  Opis je obavezan. Prekovremeni preko ponoći: dio poslije ponoći računa se u sljedeći mjesec.
-- Dan mijenjate klikom na njega (olovka); odsustvo skidate brisanjem, pa se dan vraća na standardan.
-- *Predaj na odobravanje* → potvrda (Da/Ne). **Očekivano:** mjesec se zaključava, status "Predano", piše ko je na redu (Tarik).
+### C. Povratak i verzije
+- Ako je Tarik vratio Lejlinu šihtaricu: kao Lejla pročitajte poruku, *Odgovori*, ispravite, *Predaj* ponovo.
+- U desnom panelu **Predate verzije** → *Otvori*: starija verzija samo za čitanje, uz traku za povratak.
+- Tarik odobrava, zatim Selma (drugi korak lanca). Poslije posljednjeg koraka status je **Odobreno**.
 
-### D. Supervizor (Tarik)
-- Prijava `tarik` / `Privremena-1234` (izbor lozinke). Tab **Za odobravanje (1)**.
-- *Otvori* Lejlinu šihtaricu: vidite njene dane, prekovremeni i provjere. *Vrati na ispravku…* sa porukom ILI *Odobri*.
-- Tab **Moj tim**: svi koji se javljaju Tariku sa statusom (Nije predano / Predano / Odobreno). *Podsjeti* uz osobu koja nije predala (ili
-  *Podsjeti sve koji nisu predali*). Drugi pokušaj istog dana: "Podsjetnik … je već poslan".
-- **Pregled za odobravanje** u tabu *Moj tim*: poruka kao ona koju timovi šalju (ime, "Nema prekovremenih sati niti izostanaka." ili
-  "Prekovremeni sati prikazani u tabeli ispod.", odsustva/putovanja kao periodi, tabela prekovremenih). *Kopiraj* pa zalijepite u Notepad/Word:
-  tabela se lijepi kao tabulatori.
+### D. Zamjena
+- Kao Tarik: *Za odobravanje* → **Zamjena dok ste odsutni**: izaberite Harisa i period → *Postavi zamjenu*.
+- Kao **Haris**: u *Za odobravanje* se vide šihtarice "kao zamjena za Tarik". Haris smije odobriti ili vratiti; u historiji piše ko je odlučio i za koga. Svoju šihtaricu ne smije odobriti.
 
-### E. Povratak na ispravku i verzije
-- Ako je Tarik vratio šihtaricu: kao Lejla vidite poruku, *Odgovori*, ispravite unos, *Predaj* ponovo.
-- U desnom panelu **Predate verzije**: *Otvori* prikazuje starije stanje samo za čitanje (traka "Prikazana je verzija N…", dugme za povratak).
-- Tarik odobrava; zatim Selma (sljedeći korak lanca) odobrava u tabu *Za odobravanje*. Poslije posljednjeg koraka status je **Odobreno**.
+### E. Administracija (admin)
+- *Administracija*: lista sa pretragom. *Uredi*: ime, e-pošta, nadređeni, uloge, datumi zaposlenja, korisničko ime i nova lozinka (opcija "mora izabrati svoju pri prvoj prijavi").
+- *Uvezi listu radnika*: izaberite `sample-employees.csv` iz foldera servera (Z-001…Z-006 već postoje; vidi se pregled "ažurirano").
+- Pokušaj da Selma dobije za nadređenog Lejlu mora biti odbijen (krug u hijerarhiji). *Provjeri revizijski dnevnik* → "u redu".
 
-### F. Zamjena
-- Kao Tarik: *Za odobravanje* → kartica **Zamjena dok ste odsutni**: izaberite Harisa, period (npr. od danas do sedam dana) → *Postavi zamjenu*.
-- Neka Lejla ili Maja preda mjesec. Kao **Haris**: tab *Za odobravanje* sada prikazuje te šihtarice sa "kao zamjena za Tarik …". Haris smije odobriti ili
-  vratiti; u historiji piše ko je odlučio i za koga. Haris ne smije odobriti **svoju** šihtaricu.
+### F. Prijava i sigurnost
+- Pogrešna lozinka: "Pogrešno korisničko ime ili lozinka." Pet zaredom zaključava račun 15 minuta.
+- *Odjava* ostavlja prazan prijavni ekran. Uz "Zapamti me" sljedeće pokretanje prijavljuje samo.
+- Dugme *Server* na prijavnom ekranu: druga adresa (npr. server na internetu, `docs/HOSTING_DEMO.md`); `http://` je dozvoljen samo za ovaj računar.
 
-### G. Podsjetnici i notifikacije
-- Pri prijavi označite **Zapamti me na ovom računaru** (bez toga zakazani zadatak nema prijavu i šuti).
-- Odmah probajte izgled: `"C:\Program Files\SmartPoint\CompanyTimesheet\CompanyTimesheet.exe" --reminder-test` (pojavi se Windows obavijest).
-- Pravo: kao Tarik *Podsjeti* osobu koja nije predala; zatvorite aplikaciju. U roku od 30 minuta (radnim danom 07:00–20:00) stiže obavijest
-  "Podsjetnik: Tarik …". Zadatak je u *Task Scheduler → CompanyTimesheet → Reminder*. Klik na obavijest otvara aplikaciju.
+### G. Podsjetnici
+- Pri prijavi označite **Zapamti me** (bez toga zakazani zadatak nema prijavu i šuti).
+- Izgled odmah: `"C:\Program Files\SmartPoint\CompanyTimesheet\CompanyTimesheet.exe" --reminder-test`.
+- Pravo: Tarik *Podsjeti* osobu koja nije predala, zatvorite aplikaciju; u roku od 30 minuta (radnim danom 07:00–20:00) stiže obavijest.
+  Zadatak: *Task Scheduler → CompanyTimesheet → Reminder*.
 
-### H. Prijava i sigurnost
-- Pogrešna lozinka: "Pogrešno korisničko ime ili lozinka." Pet pogrešnih zaredom: račun se zaključa 15 minuta (admin ga otključava novom lozinkom).
-- *Odjava* vraća formu za prijavu; na ekranu ne ostaje ništa od prethodne osobe. Uz "Zapamti me" sljedeće pokretanje prijavljuje samo.
-- Admin: *Uredi → Ukloni korisničko ime* ili *Neaktivan* — ta osoba se više ne može prijaviti.
-
-### I. Ažuriranja
-- Dugme s ikonom oblaka u zaglavlju: "Imate najnoviju verziju (0.1.0.0)." (ako je to najnovije izdanje). Kad izađe novije izdanje, otvara se prozor
-  za nadogradnju (na engleskom) i nudi instalaciju.
+### H. Ažuriranja
+- Dugme s ikonom oblaka u zaglavlju: "Imate najnoviju verziju (…)" ili prozor za nadogradnju kad postoji novije izdanje.
 
 ## 3. Šta prijaviti
 
-Za svaku grešku napišite: korak, šta ste očekivali, šta se desilo (snimak ekrana), i datoteku loga iz `%LOCALAPPDATA%\CompanyTimesheet\logs`.
-Prijave idu na https://github.com/MuhamedAlNaqli/CompanyTimesheet/issues.
+Za svaku grešku: korak, šta ste očekivali, šta se desilo (snimak ekrana) i datoteka loga iz `%LOCALAPPDATA%\CompanyTimesheet\logs`.
+Prijave: https://github.com/MuhamedAlNaqli/CompanyTimesheet/issues.
 
-Poznato i namjerno: izvoz u Excel/PDF i uloge finansija/pravnog su isključeni (zastavice); prijava Windows nalogom je isključena; mailovi
-podsjetnika su isključeni.
+Isključeno namjerno: izvoz u Excel/PDF, uloge finansija i pravnog, prijava Windows nalogom, mailovi podsjetnika (zastavice).
 
-## 4. Čišćenje poslije testa
+## 4. Čišćenje
 
-1. Zatvorite prozor servera.
-2. Obrišite `%LOCALAPPDATA%\CompanyTimesheetTestServer` (baza) i `%LOCALAPPDATA%\CompanyTimesheet` (postavke i log aplikacije).
-3. *Settings → Apps*: deinstalirajte **Evidencija radnog vremena** (uklanja i zakazani zadatak).
-4. Uklonite adresu servera: `reg delete HKCU\Environment /v Company__ApiUrl /f`.
+1. Zatvorite prozor servera i obrišite `%LOCALAPPDATA%\CompanyTimesheetTestServer` (baza) i `%LOCALAPPDATA%\CompanyTimesheet` (postavke i log).
+2. *Settings → Apps*: deinstalirajte **Evidencija radnog vremena** (uklanja i zakazani zadatak).
+3. Ako ste pokrenuli `trust-test-certificate.ps1`: `certmgr.msc` → *Trusted Root Certification Authorities* i *Trusted Publishers* → uklonite "Smart Point (test signing)".

@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+.git/
+publish/
+installer/output/
+tests/

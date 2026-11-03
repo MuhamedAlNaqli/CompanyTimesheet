@@ -21,3 +21,8 @@ logs/
 
 # Installer output
 installer/output/
+
+# Signing keys never go into the repository
+*.pfx
+*.snk
+password.txt

@@ -11,6 +11,8 @@ set "Authentication__Mode=Password"
 set "Bootstrap__AdminUsername=admin"
 set "Bootstrap__AdminPassword=Admin-first-password-1"
 set "ASPNETCORE_URLS=http://localhost:5090"
+rem Sample people and two submitted months, for a quick try (only into an empty database)
+set "Demo__Seed=true"
 
 rem Reminders are counted from this month, so a new test database does not start with months of overdue timesheets
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM"') do set "Reminders__StartFrom=%%i"
@@ -18,6 +20,7 @@ for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM"') do s
 echo.
 echo  Test server:  http://localhost:5090
 echo  Database:     %DATA%\test.db   (delete the file to start from nothing)
+echo  Sample people (password  Demo-password-1 ): lejla, tarik, selma, haris, maja, nermin
 echo  Administrator: admin  /  Admin-first-password-1   (you choose your own password at the first sign-in)
 echo.
 echo  Leave this window open while you test. Close it (or press Ctrl+C) to stop the server.

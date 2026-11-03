@@ -10,6 +10,9 @@ public interface ICompanySession
 
     bool HasToken { get; }
 
+    /// <summary>Points the client at another server; throws when the text is not an address, or plain http is used for another computer</summary>
+    void UseServer(string address);
+
     /// <summary>The server is used with a user name and password (not with the Windows account)</summary>
     bool PasswordSignIn { get; }
 

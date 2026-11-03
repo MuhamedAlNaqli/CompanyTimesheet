@@ -127,6 +127,14 @@ public class EmployeeViewModelTests
     {
         public bool PasswordSignIn { get; set; }
         public bool HasToken { get; private set; }
+        public List<string> Servers { get; } = new();
+        public Exception? RefuseServer { get; set; }
+
+        public void UseServer(string address)
+        {
+            if (RefuseServer != null) throw RefuseServer;
+            Servers.Add(address);
+        }
         public bool MustChange { get; set; }
         public string? RefuseWith { get; set; }
         public List<string> Calls { get; } = new();
@@ -175,6 +183,12 @@ public class EmployeeViewModelTests
         public bool AuditIntact { get; set; } = true;
         public Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default) =>
             Task.FromResult(new AuditVerificationDto(AuditIntact, 120, 0, AuditIntact ? null : 77, null));
+    }
+
+    private sealed class FakeServer : IServerSettings
+    {
+        public string Address { get; set; } = "http://localhost:5090";
+        public void Save(string address) => Address = address;
     }
 
     private sealed class FakeUpdates : IUpdateService
@@ -231,7 +245,13 @@ public class EmployeeViewModelTests
 
     private static (EmployeeViewModel Vm, FakeClient Client, FakeDialogs Dialogs, FakeSaver Saver, FakeShell Shell) CreateWith(out FakeSession session, out FakeTokens tokens, out FakeAdmin admin, out FakeUpdates updates)
     {
+        return CreateWith(out session, out tokens, out admin, out updates, out _);
+    }
+
+    private static (EmployeeViewModel Vm, FakeClient Client, FakeDialogs Dialogs, FakeSaver Saver, FakeShell Shell) CreateWith(out FakeSession session, out FakeTokens tokens, out FakeAdmin admin, out FakeUpdates updates, out FakeServer server)
+    {
         updates = new FakeUpdates();
+        server = new FakeServer();
         admin = new FakeAdmin();
         var client = new FakeClient();
         var dialogs = new FakeDialogs();
@@ -239,7 +259,7 @@ public class EmployeeViewModelTests
         var shell = new FakeShell();
         session = new FakeSession();
         tokens = new FakeTokens();
-        var vm = new EmployeeViewModel(client, session, admin, tokens, dialogs, saver, shell, updates, NullLogger<EmployeeViewModel>.Instance) { Year = 2026, Month = 9 };
+        var vm = new EmployeeViewModel(client, session, admin, tokens, dialogs, saver, shell, updates, server, NullLogger<EmployeeViewModel>.Instance) { Year = 2026, Month = 9 };
         return (vm, client, dialogs, saver, shell);
     }
 
@@ -1038,6 +1058,45 @@ public class EmployeeViewModelTests
         Assert.IsFalse(vm.IsConnected);
         Assert.AreEqual("", vm.LoginUsername, "the next person starts with an empty form");
         Assert.IsFalse(vm.LoginRemember);
+    }
+
+    [TestMethod]
+    public async Task TheServerAddressTypedOnTheSignInScreen_IsUsedAndRemembered()
+    {
+        var (vm, _, _, _, _) = CreateWith(out var session, out _, out _, out _, out var server);
+        session.PasswordSignIn = true;
+        Assert.AreEqual("http://localhost:5090", vm.ServerAddress, "a test on one PC needs no setting");
+
+        vm.ServerAddress = "https://demo.example.com/";
+        vm.LoginUsername = "amra";
+        vm.LoginPassword = "Start-password-1";
+        await vm.SignInCommand.ExecuteAsync(null);
+
+        CollectionAssert.AreEqual(new[] { "https://demo.example.com/" }, session.Servers);
+        Assert.AreEqual("https://demo.example.com/", server.Address);
+        Assert.IsFalse(vm.NeedsSignIn);
+    }
+
+    [TestMethod]
+    public async Task AnUnusableServerAddress_IsExplained_AndNobodyIsSignedIn()
+    {
+        var (vm, _, _, _, _) = CreateWith(out var session, out _, out _, out _, out var server);
+        session.PasswordSignIn = true;
+        vm.LoginUsername = "amra";
+        vm.LoginPassword = "Start-password-1";
+
+        vm.ServerAddress = "ovo nije adresa";
+        session.RefuseServer = new ArgumentException("bad");
+        await vm.SignInCommand.ExecuteAsync(null);
+        StringAssert.Contains(vm.LoginError, "nije ispravna");
+
+        vm.ServerAddress = "http://neki-drugi-racunar:5090";
+        session.RefuseServer = new InvalidOperationException("http");
+        await vm.SignInCommand.ExecuteAsync(null);
+        StringAssert.Contains(vm.LoginError, "https://");
+
+        Assert.AreEqual("http://localhost:5090", server.Address, "a refused address is not remembered");
+        Assert.IsFalse(session.Calls.Any(c => c.StartsWith("login")), "no sign-in is tried against an address that cannot be used");
     }
 
     [TestMethod]

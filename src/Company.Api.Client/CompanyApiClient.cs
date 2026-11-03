@@ -27,7 +27,7 @@ public sealed record DownloadedFile(string FileName, byte[] Bytes);
 /// </summary>
 public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, ICompanyAdminClient
 {
-    private readonly HttpClient _http;
+    private volatile HttpClient _http;
     private volatile string? _token;
 
     public CompanyApiClient(HttpClient http, bool passwordSignIn = false)
@@ -37,6 +37,18 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
     }
 
     public bool PasswordSignIn { get; }
+
+    /// <summary>Points the client at another server (the address typed on the sign-in screen). The session of the old one ends.</summary>
+    /// <exception cref="ArgumentException">The text is not an address</exception>
+    /// <exception cref="InvalidOperationException">Plain http is only for this computer</exception>
+    public void UseServer(string address)
+    {
+        if (!Uri.TryCreate((address ?? "").Trim().TrimEnd('/'), UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            throw new ArgumentException("The server address must be like https://server.example.com", nameof(address));
+
+        _http = PasswordSignIn ? CreatePlainHttpClient(uri) : CreateWindowsHttpClient(uri);
+        _token = null;
+    }
 
     /// <summary>
     /// An HTTP client that signs in with the Windows account of the user (Kerberos on a domain, NTLM otherwise).

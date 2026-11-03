@@ -26,6 +26,7 @@ public partial class EmployeeViewModel : ObservableObject
     private readonly ISheetFileSaver _files;
     private readonly IEmployeeShell _shell;
     private readonly IUpdateService _updates;
+    private readonly IServerSettings _server;
     private readonly ILogger<EmployeeViewModel> _logger;
     private SheetDto? _sheet;
 
@@ -165,9 +166,11 @@ public partial class EmployeeViewModel : ObservableObject
 
     partial void OnErrorTextChanged(string value) => OnPropertyChanged(nameof(HasError));
 
-    public EmployeeViewModel(ICompanyApiClient client, ICompanySession session, ICompanyAdminClient admin, IEmployeeSignInStore tokens, IEmployeeDialogs dialogs, ISheetFileSaver files, IEmployeeShell shell, IUpdateService updates, ILogger<EmployeeViewModel> logger)
+    public EmployeeViewModel(ICompanyApiClient client, ICompanySession session, ICompanyAdminClient admin, IEmployeeSignInStore tokens, IEmployeeDialogs dialogs, ISheetFileSaver files, IEmployeeShell shell, IUpdateService updates, IServerSettings server, ILogger<EmployeeViewModel> logger)
     {
         _updates = updates;
+        _server = server;
+        ServerAddress = server.Address;
         _client = client;
         _session = session;
         _admin = admin;
@@ -885,6 +888,38 @@ public partial class EmployeeViewModel : ObservableObject
 
     private string? _pendingToken;
 
+    /// <summary>The address of the company server, shown on the sign-in screen so a test can point the app at any server</summary>
+    [ObservableProperty] private string _serverAddress = "";
+
+    [ObservableProperty] private bool _showServerField;
+
+    [RelayCommand]
+    private void ToggleServerField() => ShowServerField = !ShowServerField;
+
+    /// <summary>Uses the address typed on the sign-in screen; false (with the reason in LoginError) when it cannot be used</summary>
+    private bool ApplyServerAddress()
+    {
+        var typed = ServerAddress.Trim();
+        if (typed == _server.Address) return true;
+
+        try
+        {
+            _session.UseServer(typed);
+            _server.Save(typed);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            LoginError = "Adresa servera nije ispravna. Primjer: https://server.firma.ba ili http://localhost:5090";
+        }
+        catch (InvalidOperationException)
+        {
+            LoginError = "Adresa mora počinjati sa https:// (http je dozvoljen samo za ovaj računar).";
+        }
+
+        return false;
+    }
+
     private bool NeedsSignInAgain(ApiException ex) => _session.PasswordSignIn && ex.Code == "unauthorized";
 
     private void ShowSignIn(string message)
@@ -924,6 +959,8 @@ public partial class EmployeeViewModel : ObservableObject
             LoginError = "Unesite korisničko ime i lozinku.";
             return;
         }
+
+        if (!ApplyServerAddress()) return;
 
         var signedIn = false;
         try
@@ -1009,7 +1046,7 @@ public partial class EmployeeViewModel : ObservableObject
         "weak-password" => "Lozinka je preslaba: najmanje 10 znakova i različita od korisničkog imena.",
         "same-password" => "Izaberite lozinku različitu od trenutne.",
         "wrong-password" => "Trenutna lozinka nije tačna.",
-        "unreachable" or "timeout" => "Server firme nije dostupan. Provjerite mrežnu vezu (VPN).",
+        "unreachable" or "timeout" => "Server nije dostupan. Provjerite adresu servera i mrežnu vezu (VPN).",
         _ => ex.Message
     };
 
