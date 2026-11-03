@@ -1,0 +1,130 @@
+name: Build and Release
+
+# A release is made by pushing a tag: v0.1.0, v0.2.0, v1.0.0-beta ...
+# The workflow tests, publishes, builds the MSI, creates the GitHub release with the MSI and the appcast.xml.
+# The app finds new versions in https://github.com/<repository>/releases/latest/download/appcast.xml (NetSparkleUpdater).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, for example 0.1.0 (the release is only created for a pushed tag)'
+        required: true
+        default: '0.1.0'
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  SOLUTION_PATH: 'CompanyTimesheet.sln'
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Work out the version
+      id: version
+      shell: pwsh
+      run: |
+        $raw = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}' } else { '${{ inputs.version }}' }
+        $version = $raw.TrimStart('v')
+        if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "The version '$version' is not like 1.2.3 or 1.2.3-beta" }
+        $core = $version.Split('-')[0]
+        "version=$version" >> $env:GITHUB_OUTPUT
+        "assembly=$core.0" >> $env:GITHUB_OUTPUT
+        "prerelease=$($version.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
+        Write-Host "Version $version (assembly $core.0)"
+
+    - name: Restore and build
+      run: |
+        dotnet restore ${{ env.SOLUTION_PATH }}
+        dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore --verbosity minimal
+
+    - name: Test
+      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --no-build --verbosity minimal
+
+    - name: Install WiX Toolset
+      run: dotnet tool install --global wix --version 4.0.5
+
+    - name: Publish the app and build the MSI
+      shell: pwsh
+      run: ./installer/build-installer.ps1 -Version ${{ steps.version.outputs.assembly }}
+
+    - name: Write the appcast and the release notes
+      id: files
+      shell: pwsh
+      run: |
+        $version = '${{ steps.version.outputs.version }}'
+        $assembly = '${{ steps.version.outputs.assembly }}'
+        $msi = Get-ChildItem installer/output -Filter *.msi | Select-Object -First 1
+        $tag = "v$version"
+        $repo = '${{ github.repository }}'
+        $downloadUrl = "https://github.com/$repo/releases/download/$tag/$($msi.Name)"
+        $releaseUrl = "https://github.com/$repo/releases/tag/$tag"
+        $date = (Get-Date).ToUniversalTime().ToString('ddd, dd MMM yyyy HH:mm:ss +0000', [Globalization.CultureInfo]::InvariantCulture)
+
+        $item = @"
+            <item>
+                <title>Evidencija radnog vremena $version</title>
+                <sparkle:version>$assembly</sparkle:version>
+                <sparkle:shortVersionString>$version</sparkle:shortVersionString>
+                <description><![CDATA[<h3>Evidencija radnog vremena $version</h3><p><a href="$releaseUrl">Release notes</a></p>]]></description>
+                <pubDate>$date</pubDate>
+                <link>$downloadUrl</link>
+                <sparkle:releaseNotesLink>$releaseUrl</sparkle:releaseNotesLink>
+                <sparkle:os>windows</sparkle:os>
+                <sparkle:installerArguments>/passive</sparkle:installerArguments>
+                <enclosure url="$downloadUrl" sparkle:version="$assembly" sparkle:shortVersionString="$version" sparkle:os="windows" type="application/octet-stream" length="$($msi.Length)" />
+            </item>
+        "@
+
+        # The appcast lists the newest release: the updater only needs to know what is the latest version
+        $appcast = (Get-Content installer/appcast.xml -Raw) -replace '(?s)\s*<!--.*?-->', "`n$item"
+        $appcast | Out-File -FilePath installer/output/appcast.xml -Encoding utf8
+
+        @"
+        # Evidencija radnog vremena $version
+
+        Install the MSI below on the PC of the employee (it needs administrator rights once). The address of the company server goes into
+        ``appsettings.local.json`` next to the program (``Company:ApiUrl``); an update keeps that file.
+        An installed copy finds this version by itself (the button with the cloud icon in the window checks at once).
+
+        Commit: ${{ github.sha }}
+        "@ | Out-File -FilePath release-notes.md -Encoding utf8
+
+        "msi=$($msi.FullName)" >> $env:GITHUB_OUTPUT
+
+    - name: Create the GitHub release
+      if: ${{ github.ref_type == 'tag' }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        $flags = @()
+        if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $flags += '--prerelease' }
+        gh release create "${{ github.ref_name }}" "${{ steps.files.outputs.msi }}" "installer/output/appcast.xml" `
+          --title "Evidencija radnog vremena ${{ github.ref_name }}" --notes-file release-notes.md @flags
+
+    - name: Keep the MSI of a manual run
+      if: ${{ github.ref_type != 'tag' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: msi-installer
+        path: |
+          installer/output/*.msi
+          installer/output/appcast.xml
+        retention-days: 14

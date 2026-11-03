@@ -1,0 +1,23 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+bin/
+obj/
+publish/
+TestResults/
+*.user
+.vs/
+.idea/
+
+# Local settings and secrets
+appsettings.local.json
+*.db
+*.db-shm
+*.db-wal
+
+# The employee list of the company is personal data: it never goes into the repository
+Lista radnika*.csv
+logs/
+
+# Installer output
+installer/output/

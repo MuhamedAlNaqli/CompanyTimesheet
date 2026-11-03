@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="Evidencija radnog vremena"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="Smart Point"
+           UpgradeCode="6498C02A-693F-46ED-9C70-1E00D31C43CC"
+           InstallerVersion="500"
+           Compressed="yes"
+           Scope="perMachine">
+
+    <SummaryInformation Description="Evidencija radnog vremena - the company timesheet" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- A newer MSI replaces the installed one (this is how the in-app update installs); appsettings.local.json stays -->
+    <MajorUpgrade
+      Schedule="afterInstallInitialize"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed. Please uninstall the newer version first."
+      AllowDowngrades="no"
+      AllowSameVersionUpgrades="yes"
+      MigrateFeatures="yes" />
+
+    <Feature Id="ProductFeature" Title="Evidencija radnog vremena" Level="1" Description="The application">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="StartMenuShortcuts" />
+    </Feature>
+
+    <Feature Id="DesktopShortcutFeature" Title="Desktop Shortcut" Level="1000" Description="Creates a shortcut on the desktop">
+      <ComponentGroupRef Id="DesktopShortcuts" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyFolder" Name="SmartPoint">
+        <Directory Id="INSTALLFOLDER" Name="CompanyTimesheet" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Evidencija radnog vremena" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="1CCC7282-86B5-416C-A93E-9A11BFA3D4C2">
+        <File Id="CompanyTimesheetExe" Name="CompanyTimesheet.exe" Source="$(var.PublishDir)\CompanyTimesheet.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- The defaults. The address of the company server goes into appsettings.local.json (not part of the package, so an update keeps it). -->
+      <Component Id="ConfigurationFiles" Guid="2765471E-F386-404B-9674-92584463177E">
+        <File Id="AppSettingsJson" Name="appsettings.json" Source="$(var.PublishDir)\appsettings.json" KeyPath="yes" />
+      </Component>
+
+      <Component Id="RegistryEntries" Guid="170B0B63-E5A4-4880-9AE5-4C455E335EEF">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\SmartPoint\CompanyTimesheet">
+          <RegistryValue Name="Version" Type="string" Value="$(var.Version)" KeyPath="yes" />
+          <RegistryValue Name="InstallPath" Type="string" Value="[INSTALLFOLDER]" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="StartMenuShortcuts" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationStartMenuShortcut" Guid="1F97543E-AFED-466E-A69F-2BA17FB514C3">
+        <Shortcut Id="ApplicationStartMenuShortcutId" Name="Evidencija radnog vremena" Target="[INSTALLFOLDER]CompanyTimesheet.exe" WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="UninstallProduct" Name="Uninstall Evidencija radnog vremena" Target="[SystemFolder]msiexec.exe" Arguments="/x [ProductCode]" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\SmartPoint\CompanyTimesheet" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="DesktopShortcuts" Directory="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="0F0314EF-D0B9-478D-9C38-C555B2378ED9">
+        <Shortcut Id="DesktopShortcutId" Name="Evidencija radnog vremena" Target="[INSTALLFOLDER]CompanyTimesheet.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\SmartPoint\CompanyTimesheet" Name="desktop_shortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Property Id="ARPHELPLINK" Value="https://github.com/MuhamedAlNaqli/CompanyTimesheet" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/MuhamedAlNaqli/CompanyTimesheet" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Launch Condition="VersionNT64" Message="This application requires a 64-bit version of Windows." />
+
+    <!-- Remove the reminder task the app registered for the current user when the app is uninstalled (not when it is upgraded) -->
+    <CustomAction Id="RemoveReminderTask"
+                  Directory="TARGETDIR"
+                  ExeCommand="schtasks.exe /Delete /TN &quot;CompanyTimesheet\Reminder&quot; /F"
+                  Execute="immediate"
+                  Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="RemoveReminderTask" After="InstallInitialize" Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

@@ -1,0 +1,140 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="CompanyTimesheet.Desktop.App"
+             RequestedThemeVariant="Light">
+    
+    <!-- Theme Configuration -->
+    <Application.Styles>
+        <!-- Material Avalonia keeps the familiar control set; the colour comes from the palette below, not from Material's purple -->
+        <themes:MaterialTheme BaseTheme="Inherit" PrimaryColor="Teal" SecondaryColor="Amber" />
+        <materialIcons:MaterialIconStyles />
+
+        <!-- Custom Application Styles -->
+        <StyleInclude Source="Styles/App.axaml"/>
+    </Application.Styles>
+
+    <!-- Global Resources -->
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <!-- Typography -->
+            <FontFamily x:Key="AppFont">fonts:Inter#Inter</FontFamily>
+
+            <!-- Theme-aware palette: values switch with RequestedThemeVariant.
+                 Brand: deep teal (light) / bright teal (dark), warm amber for highlights.
+                 The Material* keys make Material's own controls (checkboxes, progress, focus) follow the brand colour. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppBackground" Color="#FFF3F5F7"/>
+                    <SolidColorBrush x:Key="AppSurface" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppSurfaceAlt" Color="#FFF8FAFB"/>
+                    <SolidColorBrush x:Key="AppSidebar" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppInputBg" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppInputText" Color="#FF0F172A"/>
+                    <SolidColorBrush x:Key="AppBorder" Color="#FFE4E8EC"/>
+                    <SolidColorBrush x:Key="AppBorderStrong" Color="#FFCBD2D9"/>
+                    <SolidColorBrush x:Key="AppDivider" Color="#FFEEF1F4"/>
+                    <SolidColorBrush x:Key="AppHover" Color="#FFF1F4F6"/>
+                    <SolidColorBrush x:Key="AppPressed" Color="#FFE6EAEE"/>
+                    <SolidColorBrush x:Key="AppText" Color="#FF334155"/>
+                    <SolidColorBrush x:Key="AppTextStrong" Color="#FF0F172A"/>
+                    <SolidColorBrush x:Key="AppTextMuted" Color="#FF64748B"/>
+                    <SolidColorBrush x:Key="AppTextFaint" Color="#FF94A3B8"/>
+                    <SolidColorBrush x:Key="AppAccent" Color="#FF0F766E"/>
+                    <SolidColorBrush x:Key="AppAccentHover" Color="#FF0B5F58"/>
+                    <SolidColorBrush x:Key="AppAccentSoft" Color="#FFE2F4F1"/>
+                    <SolidColorBrush x:Key="AppOnAccent" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppAccentFill" Color="#FF0F766E"/>
+                    <SolidColorBrush x:Key="AppAccentFillHover" Color="#FF0B5F58"/>
+                    <SolidColorBrush x:Key="AppBadgeBg" Color="#FFD9F3EF"/>
+                    <SolidColorBrush x:Key="AppBadgeText" Color="#FF0B5D56"/>
+                    <SolidColorBrush x:Key="AppAccentSoftBorder" Color="#FF99D9D1"/>
+                    <SolidColorBrush x:Key="AppDanger" Color="#FFDC2626"/>
+                    <SolidColorBrush x:Key="AppDangerSoft" Color="#FFFDECEC"/>
+                    <SolidColorBrush x:Key="AppWarningSoft" Color="#FFFEF3DC"/>
+                    <SolidColorBrush x:Key="AppWarningBorder" Color="#FFF5D08A"/>
+                    <SolidColorBrush x:Key="AppOverlay" Color="#80000000"/>
+                    <SolidColorBrush x:Key="ThemeAccentBrush" Color="#FF64748B"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryMidBrush" Color="#FF0F766E"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryLightBrush" Color="#FF14A398"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryDarkBrush" Color="#FF0B5F58"/>
+                    <SolidColorBrush x:Key="PrimaryHueMidBrush" Color="#FF0F766E"/>
+                    <SolidColorBrush x:Key="PrimaryHueLightBrush" Color="#FF14A398"/>
+                    <SolidColorBrush x:Key="PrimaryHueDarkBrush" Color="#FF0B5F58"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryMidForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryLightForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryDarkForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueMidForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueLightForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueDarkForegroundBrush" Color="#FFFFFFFF"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppBackground" Color="#FF0C1114"/>
+                    <SolidColorBrush x:Key="AppSurface" Color="#FF151B20"/>
+                    <SolidColorBrush x:Key="AppSurfaceAlt" Color="#FF12181C"/>
+                    <SolidColorBrush x:Key="AppSidebar" Color="#FF10161A"/>
+                    <SolidColorBrush x:Key="AppInputBg" Color="#FF11171B"/>
+                    <SolidColorBrush x:Key="AppInputText" Color="#FFE8EEF1"/>
+                    <SolidColorBrush x:Key="AppBorder" Color="#FF232C33"/>
+                    <SolidColorBrush x:Key="AppBorderStrong" Color="#FF34414A"/>
+                    <SolidColorBrush x:Key="AppDivider" Color="#FF1C252B"/>
+                    <SolidColorBrush x:Key="AppHover" Color="#FF1D272D"/>
+                    <SolidColorBrush x:Key="AppPressed" Color="#FF26323A"/>
+                    <SolidColorBrush x:Key="AppText" Color="#FFCBD5DB"/>
+                    <SolidColorBrush x:Key="AppTextStrong" Color="#FFF1F5F7"/>
+                    <SolidColorBrush x:Key="AppTextMuted" Color="#FF8FA0AB"/>
+                    <SolidColorBrush x:Key="AppTextFaint" Color="#FF6B7C87"/>
+                    <SolidColorBrush x:Key="AppAccent" Color="#FF2DD4BF"/>
+                    <SolidColorBrush x:Key="AppAccentHover" Color="#FF5EEAD4"/>
+                    <SolidColorBrush x:Key="AppAccentSoft" Color="#FF10312E"/>
+                    <SolidColorBrush x:Key="AppOnAccent" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="AppAccentFill" Color="#FF0D8077"/>
+                    <SolidColorBrush x:Key="AppAccentFillHover" Color="#FF0F9488"/>
+                    <SolidColorBrush x:Key="AppBadgeBg" Color="#FF123A36"/>
+                    <SolidColorBrush x:Key="AppBadgeText" Color="#FF7EE7DA"/>
+                    <SolidColorBrush x:Key="AppAccentSoftBorder" Color="#FF1F6F67"/>
+                    <SolidColorBrush x:Key="AppDanger" Color="#FFF87171"/>
+                    <SolidColorBrush x:Key="AppDangerSoft" Color="#FF3A1B1D"/>
+                    <SolidColorBrush x:Key="AppWarningSoft" Color="#FF3A2D12"/>
+                    <SolidColorBrush x:Key="AppWarningBorder" Color="#FF7A5A1A"/>
+                    <SolidColorBrush x:Key="AppOverlay" Color="#B0000000"/>
+                    <SolidColorBrush x:Key="ThemeAccentBrush" Color="#FF8FA0AB"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryMidBrush" Color="#FF0D8077"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryLightBrush" Color="#FF5EEAD4"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryDarkBrush" Color="#FF14A398"/>
+                    <SolidColorBrush x:Key="PrimaryHueMidBrush" Color="#FF0D8077"/>
+                    <SolidColorBrush x:Key="PrimaryHueLightBrush" Color="#FF5EEAD4"/>
+                    <SolidColorBrush x:Key="PrimaryHueDarkBrush" Color="#FF14A398"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryMidForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryLightForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="MaterialPrimaryDarkForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueMidForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueLightForegroundBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="PrimaryHueDarkForegroundBrush" Color="#FFFFFFFF"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <!-- Common Values -->
+            <Thickness x:Key="DefaultMargin">16</Thickness>
+            <Thickness x:Key="DefaultPadding">16</Thickness>
+            <x:Double x:Key="HeaderFontSize">24</x:Double>
+            <x:Double x:Key="SubHeaderFontSize">18</x:Double>
+            
+            <!-- Common Brushes -->
+            <SolidColorBrush x:Key="SuccessBrush" Color="#16A34A"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
+            <SolidColorBrush x:Key="ErrorBrush" Color="#DC2626"/>
+            <SolidColorBrush x:Key="InfoBrush" Color="#0EA5E9"/>
+            
+            <!-- Additional Margins and Paddings -->
+            <Thickness x:Key="SmallMargin">5</Thickness>
+            <Thickness x:Key="SmallPadding">8</Thickness>
+            
+            <!-- Additional Font Sizes -->
+            <x:Double x:Key="NormalFontSize">14</x:Double>
+            <x:Double x:Key="SmallFontSize">12</x:Double>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

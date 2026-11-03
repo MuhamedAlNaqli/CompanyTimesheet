@@ -1,0 +1,42 @@
+using Company.Api.Contracts;
+
+namespace Company.Api.Client;
+
+/// <summary>Who is signed in to the company server: the session token of a user name and password, and the calls around it</summary>
+public interface ICompanySession
+{
+    /// <summary>The session token that goes with every request; null means no sign-in (Windows sign-in needs none)</summary>
+    void UseToken(string? token);
+
+    bool HasToken { get; }
+
+    /// <summary>The server is used with a user name and password (not with the Windows account)</summary>
+    bool PasswordSignIn { get; }
+
+    Task<LoginResultDto> LoginAsync(string username, string password, bool remember, CancellationToken ct = default);
+
+    /// <summary>Ends the session on the server. A server that cannot be reached does not stop the sign-out.</summary>
+    Task LogoutAsync(CancellationToken ct = default);
+
+    Task ChangePasswordAsync(string current, string newPassword, CancellationToken ct = default);
+}
+
+/// <summary>What the administrator does: the people, their user names and the import of the list of employees</summary>
+public interface ICompanyAdminClient
+{
+    Task<List<EmployeeDto>> GetEmployeesAsync(CancellationToken ct = default);
+
+    Task<EmployeeDto> UpdateEmployeeAsync(string code, UpdateEmployeeRequest request, CancellationToken ct = default);
+
+    Task<ImportPreviewDto> PreviewImportAsync(string csv, CancellationToken ct = default);
+
+    Task<ImportResultDto> ImportAsync(string csv, CancellationToken ct = default);
+
+    Task<List<CredentialDto>> GetCredentialsAsync(CancellationToken ct = default);
+
+    Task SetCredentialsAsync(string code, SetCredentialsRequest request, CancellationToken ct = default);
+
+    Task RemoveCredentialsAsync(string code, CancellationToken ct = default);
+
+    Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default);
+}

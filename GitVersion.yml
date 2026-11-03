@@ -1,0 +1,8 @@
+next-version: 0.1.0
+branches:
+  main:
+    regex: ^main$
+    increment: Patch
+  master:
+    regex: ^master$
+    increment: Patch

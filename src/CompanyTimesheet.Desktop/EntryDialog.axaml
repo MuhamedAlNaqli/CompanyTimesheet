@@ -1,0 +1,90 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialIcons="using:Material.Icons.Avalonia"
+        xmlns:em="using:CompanyTimesheet.Desktop"
+        x:Class="CompanyTimesheet.Desktop.EntryDialog"
+        x:DataType="em:EntryViewModel"
+        Title="Unos" Width="580" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="28,24" Spacing="16">
+        <TextBlock Name="EntryDialogTitle" Text="{Binding Title}" Classes="title"/>
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Šifra" Classes="label"/>
+            <ComboBox Name="EntryCodeComboBox" Classes="form" ItemsSource="{Binding Codes}" SelectedItem="{Binding SelectedCode}" HorizontalAlignment="Stretch"/>
+        </StackPanel>
+
+        <!-- The date: one day, or the first day of an absence -->
+        <Grid ColumnDefinitions="*,16,*">
+            <StackPanel Spacing="6">
+                <TextBlock Name="EntryDateLabel" Text="{Binding DateLabel}" Classes="label"/>
+                <DatePicker Name="EntryDatePicker" Classes="form" SelectedDate="{Binding Date, Mode=TwoWay}" IsEnabled="{Binding CanChangeDate}"
+                            MinYear="{Binding MinDate}" MaxYear="{Binding MaxDate}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="6" IsVisible="{Binding IsAbsence}">
+                <TextBlock Text="Do" Classes="label"/>
+                <DatePicker Name="EntryToPicker" Classes="form" SelectedDate="{Binding To, Mode=TwoWay}" MinYear="{Binding MinDate}" MaxYear="{Binding MaxDate}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Hours of a day -->
+        <StackPanel Spacing="6" IsVisible="{Binding IsHours}">
+            <TextBlock Text="Sati (na primjer 8, 7,5 ili 7:30)" Classes="label"/>
+            <TextBox Name="EntryHoursBox" Classes="form" Text="{Binding HoursText}"/>
+        </StackPanel>
+
+        <!-- Several days of absence -->
+        <StackPanel Spacing="10" IsVisible="{Binding IsAbsence}">
+            <Button Name="EntryPreviewButton" Command="{Binding ShowPreviewCommand}" Classes="secondary" HorizontalAlignment="Left" Padding="14,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <materialIcons:MaterialIcon Kind="CalendarSearch" Width="18" Height="18"/>
+                    <TextBlock Text="Prikaži dane"/>
+                </StackPanel>
+            </Button>
+            <TextBlock Name="EntryPreviewText" Text="{Binding PreviewText}" TextWrapping="Wrap"
+                       IsVisible="{Binding PreviewText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource AppTextStrong}"/>
+        </StackPanel>
+
+        <!-- Overtime: start, end, what was done, and what it comes to -->
+        <StackPanel Spacing="12" IsVisible="{Binding IsOvertime}">
+            <Grid ColumnDefinitions="*,16,*">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Početak (HH:mm)" Classes="label"/>
+                    <TextBox Name="EntryStartBox" Classes="form" Text="{Binding StartText}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6">
+                    <TextBlock Text="Kraj (HH:mm)" Classes="label"/>
+                    <TextBox Name="EntryEndBox" Classes="form" Text="{Binding EndText}"/>
+                </StackPanel>
+            </Grid>
+            <Border Background="{DynamicResource AppSurfaceAlt}" CornerRadius="8" Padding="12,10">
+                <StackPanel Spacing="4">
+                    <TextBlock Name="EntrySummaryText" Text="{Binding SummaryText}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextStrong}"/>
+                    <TextBlock Name="EntryWarningText" Text="{Binding WarningText}" TextWrapping="Wrap" Foreground="#B45309"
+                               IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+            </Border>
+            <StackPanel Spacing="6">
+                <TextBlock Text="Kratak opis posla (šta je tačno rađeno) *" Classes="label"/>
+                <TextBox Name="EntryDescriptionBox" Classes="form" Text="{Binding Description}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"/>
+            </StackPanel>
+        </StackPanel>
+
+        <TextBlock Name="EntryHintText" Text="{Binding HintText}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
+        <TextBlock Name="EntryDialogError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+            <Button Name="EntryCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <materialIcons:MaterialIcon Kind="Close" Width="18" Height="18"/>
+                    <TextBlock Text="Odustani"/>
+                </StackPanel>
+            </Button>
+            <Button Name="EntrySaveButton" Command="{Binding SaveCommand}" Classes="dialog primary">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <materialIcons:MaterialIcon Kind="ContentSave" Width="18" Height="18"/>
+                    <TextBlock Text="Sačuvaj"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

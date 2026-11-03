@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The typed client of the company API for the desktop app: no UI, no state -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Company.Api.Contracts\Company.Api.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

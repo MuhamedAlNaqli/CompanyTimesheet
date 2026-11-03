@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Timesheet.Domain</RootNamespace>
+    <!-- Pure rules: no I/O, no framework dependencies, so every client and the API can share it -->
+  </PropertyGroup>
+
+</Project>

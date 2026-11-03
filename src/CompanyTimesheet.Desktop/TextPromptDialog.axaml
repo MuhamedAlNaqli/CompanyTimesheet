@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:em="using:CompanyTimesheet.Desktop"
+        x:Class="CompanyTimesheet.Desktop.TextPromptDialog"
+        x:DataType="em:TextPromptViewModel"
+        Title="{Binding Title}" Width="520" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="28,24" Spacing="14">
+        <TextBlock Name="PromptTitle" Text="{Binding Title}" Classes="title"/>
+        <TextBlock Name="PromptQuote" Text="{Binding Quote}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
+                   IsVisible="{Binding Quote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        <StackPanel Spacing="6">
+            <TextBlock Text="{Binding Label}" Classes="label"/>
+            <TextBox Name="PromptTextBox" Classes="form" Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90"/>
+        </StackPanel>
+        <TextBlock Name="PromptError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+            <Button Name="PromptCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="Odustani"/></Button>
+            <Button Name="PromptOkButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="{Binding ConfirmText}"/></Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

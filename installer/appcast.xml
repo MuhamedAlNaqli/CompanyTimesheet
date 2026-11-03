@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Evidencija radnog vremena</title>
+        <description>Software updates for Evidencija radnog vremena (CompanyTimesheet)</description>
+        <language>en</language>
+        <link>https://github.com/MuhamedAlNaqli/CompanyTimesheet</link>
+
+        <!-- The release workflow adds one item for every release, newest first -->
+    </channel>
+</rss>
