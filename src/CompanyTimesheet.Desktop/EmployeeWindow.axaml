@@ -56,13 +56,21 @@
 
         <!-- Own timesheet or timesheets waiting for approval -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConnected}">
-            <Button Name="EmpMineTab" Command="{Binding ShowMineCommand}" Classes.secondary="{Binding !InMine}" Classes.primary="{Binding InMine}" Padding="16,8">
+            <Button Name="EmpMineTab" Command="{Binding ShowMineCommand}" Classes.secondary="{Binding !InSheet}" Classes.primary="{Binding InSheet}" Padding="16,8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="AccountClock" Width="18" Height="18"/>
                     <TextBlock Text="Moja šihtarica"/>
                 </StackPanel>
             </Button>
-            <Button Name="EmpApprovalsTab" Command="{Binding ShowApprovalsCommand}" Classes.secondary="{Binding !InApprovals}" Classes.primary="{Binding InApprovals}" Padding="16,8">
+            <Button Name="EmpHistoryTab" Command="{Binding ShowHistoryCommand}" Classes.secondary="{Binding !InHistory}" Classes.primary="{Binding InHistory}" Padding="16,8"
+                    ToolTip.Tip="Poslane verzije i ko je šta radio s vašom šihtaricom">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <materialIcons:MaterialIcon Kind="History" Width="18" Height="18"/>
+                    <TextBlock Text="Historija"/>
+                </StackPanel>
+            </Button>
+            <!-- Only for somebody who decides on timesheets: has people below them, is a designated approver or a deputy -->
+            <Button Name="EmpApprovalsTab" Command="{Binding ShowApprovalsCommand}" IsVisible="{Binding IsApprover}" Classes.secondary="{Binding !InApprovals}" Classes.primary="{Binding InApprovals}" Padding="16,8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="AccountGroup" Width="18" Height="18"/>
                     <TextBlock Name="EmpApprovalsTabText" Text="{Binding PendingApprovals.TabText}"/>
@@ -325,19 +333,79 @@
                 </Grid>
             </Border>
 
+            <!-- The history of the own month: the versions that were submitted and who did what -->
+            <Border Grid.ColumnSpan="3" IsVisible="{Binding ShowHistoryBody}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">
+                <ScrollViewer>
+                    <StackPanel Margin="24,18" Spacing="10">
+                        <TextBlock Text="{Binding MonthTitle, StringFormat='Historija šihtarice: {0}'}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
+                        <TextBlock Text="Ko je šta radio s vašom šihtaricom za izabrani mjesec: predaje, vraćanja na ispravku i odluke. Mjesec mijenjate strelicama gore."
+                                   TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                        <TextBlock Name="EmpHistoryStatus" Text="{Binding Sheet.WorkflowText}" IsVisible="{Binding Sheet.HasWorkflow}" TextWrapping="Wrap" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
+
+                        <TextBlock Text="Predate verzije" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" Foreground="{DynamicResource AppTextMuted}"/>
+                        <TextBlock Text="Ovaj mjesec još nije predat." IsVisible="{Binding !Sheet.HasRevisions}" Foreground="{DynamicResource AppTextMuted}"/>
+                        <ItemsControl Name="EmpHistoryRevisions" ItemsSource="{Binding Sheet.Revisions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="em:RevisionRow">
+                                    <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,6">
+                                        <Grid ColumnDefinitions="140,*,Auto">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource AppTextStrong}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Detail}" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <Button Grid.Column="2" Classes="icon" Width="32" Height="32" ToolTip.Tip="Prikaži tu verziju"
+                                                    Command="{Binding $parent[Window].DataContext.OpenRevisionCommand}" CommandParameter="{Binding}">
+                                                <materialIcons:MaterialIcon Kind="EyeOutline" Width="16" Height="16"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Događaji" FontSize="13" FontWeight="SemiBold" Margin="0,12,0,0" Foreground="{DynamicResource AppTextMuted}"/>
+                        <TextBlock Text="Nema događaja." IsVisible="{Binding !Sheet.HasHistory}" Foreground="{DynamicResource AppTextMuted}"/>
+                        <ItemsControl Name="EmpHistoryEvents" ItemsSource="{Binding Sheet.History}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="em:HistoryRow">
+                                    <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,6">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding Title}" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextStrong}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
             <!-- The month: a list or a calendar -->
-            <Border IsVisible="{Binding ShowSheetBody}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">
+            <Border IsVisible="{Binding ShowDaysBody}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">
                 <Grid>
                     <TextBlock Name="EmpApprovalsHint" IsVisible="{Binding ShowApprovalsHint}" Text="Izaberite šihtaricu iz liste desno da je pregledate." Margin="24"
                                Foreground="{DynamicResource AppTextMuted}"/>
 
-                    <!-- List -->
-                    <ScrollViewer IsVisible="{Binding IsListView}">
+                    <!-- List, with the heading of each column -->
+                    <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsListView}">
+                    <Border Margin="6,6,6,0" Padding="0,6" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="5,86,120,*,170,70,90">
+                            <TextBlock Grid.Column="1" Text="Datum" Margin="10,0,0,0" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="2" Text="Vrsta dana" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="3" Text="Unosi" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="4" Text="Prekovremeni rad" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
+                                       ToolTip.Tip="Sati prekovremenog rada upisani za taj dan"/>
+                            <TextBlock Grid.Column="5" Text="Primjedbe" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
+                                       ToolTip.Tip="Broj primjedbi provjere unosa za taj dan; pređite mišem preko znaka da vidite šta je u pitanju"/>
+                            <TextBlock Grid.Column="6" Text="Radnje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"
+                                       IsVisible="{Binding IsEditable}"/>
+                        </Grid>
+                    </Border>
+                    <ScrollViewer Grid.Row="1">
                         <ItemsControl Name="EmpDaysList" ItemsSource="{Binding Sheet.Days}" Margin="6">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="em:EmployeeDayRow">
                                     <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,2">
-                                        <Grid ColumnDefinitions="5,86,150,*,210,40,90" MinHeight="40">
+                                        <Grid ColumnDefinitions="5,86,120,*,170,70,90" MinHeight="40">
                                             <Border Background="{Binding Stripe}" CornerRadius="2" Margin="0,4"/>
                                             <StackPanel Grid.Column="1" Margin="10,4,0,4" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
@@ -349,20 +417,20 @@
                                                        Foreground="{DynamicResource AppTextStrong}"/>
                                             <TextBlock Grid.Column="4" Text="{Binding Sheet.OvertimeText}" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
                                                        Foreground="#B45309"/>
-                                            <Border Grid.Column="5" IsVisible="{Binding Sheet.HasIssues}" Width="26" Height="22" CornerRadius="11" VerticalAlignment="Center"
-                                                    Background="{DynamicResource AppBadgeBg}" ToolTip.Tip="{Binding IssueTooltip}">
-                                                <TextBlock Text="{Binding IssueCount}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource AppBadgeText}"/>
-                                            </Border>
-                                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                            <StackPanel Grid.Column="5" IsVisible="{Binding HasIssues}" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                                        Background="Transparent" ToolTip.Tip="{Binding IssueTooltip}">
+                                                <materialIcons:MaterialIcon Kind="AlertOutline" Width="16" Height="16" Foreground="#B45309"/>
+                                                <TextBlock Text="{Binding IssueCount}" FontSize="12" FontWeight="SemiBold" Foreground="#B45309"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                         IsVisible="{Binding $parent[Window].DataContext.IsEditable}">
-                                                <Button Classes="secondary" Padding="8,6" ToolTip.Tip="Uredi"
+                                                <Button Classes="icon" Width="32" Height="32" ToolTip.Tip="Uredi dan"
                                                         Command="{Binding $parent[Window].DataContext.EditDayCommand}" CommandParameter="{Binding}">
-                                                    <materialIcons:MaterialIcon Kind="Pencil" Width="16" Height="16"/>
+                                                    <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
                                                 </Button>
-                                                <Button Classes="secondary" Padding="8,6" IsVisible="{Binding HasEntries}" ToolTip.Tip="Obriši unos"
+                                                <Button Classes="icon" Width="32" Height="32" IsVisible="{Binding HasEntries}" ToolTip.Tip="Obriši unos"
                                                         Command="{Binding $parent[Window].DataContext.ClearDayCommand}" CommandParameter="{Binding}">
-                                                    <materialIcons:MaterialIcon Kind="Delete" Width="16" Height="16"/>
+                                                    <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" Foreground="{DynamicResource AppDanger}"/>
                                                 </Button>
                                             </StackPanel>
                                         </Grid>
@@ -371,6 +439,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
+                    </Grid>
 
                     <!-- Calendar: a week to a row, Monday first; a click on a day opens it -->
                     <ScrollViewer IsVisible="{Binding IsCalendarView}">
@@ -424,7 +493,7 @@
             </Border>
 
             <!-- Pending approvals, workflow, summary, overtime, findings -->
-            <ScrollViewer Grid.Column="2" IsVisible="{Binding ShowSheetBody}">
+            <ScrollViewer Grid.Column="2" IsVisible="{Binding ShowDaysBody}">
                 <StackPanel Spacing="14">
                     <Border IsVisible="{Binding InApprovals}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12" Padding="16">
                         <StackPanel Spacing="8">
@@ -464,9 +533,9 @@
                                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
                                                 <TextBlock Text="{Binding Period}" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                                             </StackPanel>
-                                            <Button Grid.Column="1" Classes="secondary" Padding="8,5" ToolTip.Tip="Ukloni zamjenu"
+                                            <Button Grid.Column="1" Classes="icon" Width="32" Height="32" ToolTip.Tip="Ukloni zamjenu"
                                                     Command="{Binding $parent[Window].DataContext.RemoveDeputyCommand}" CommandParameter="{Binding}">
-                                                <materialIcons:MaterialIcon Kind="Delete" Width="15" Height="15"/>
+                                                <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" Foreground="{DynamicResource AppDanger}"/>
                                             </Button>
                                         </Grid>
                                     </DataTemplate>
@@ -498,7 +567,7 @@
 
                     <Border IsVisible="{Binding Sheet.HasWorkflow}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12" Padding="16">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Odobravanje" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
+                            <TextBlock Text="Status šihtarice" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
                             <TextBlock Name="EmpWorkflowText" Text="{Binding Sheet.WorkflowText}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextStrong}"/>
                             <TextBlock Name="EmpChainText" Text="{Binding Sheet.ChainText}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
                             <ItemsControl Name="EmpMessagesList" ItemsSource="{Binding Sheet.Messages}">
@@ -521,6 +590,8 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <StackPanel Spacing="8" IsVisible="{Binding IsReviewing}">
+                            <!-- Versions and history of somebody else's sheet are here; those of the own sheet are in the "Historija" tab -->
                             <TextBlock Text="Predate verzije" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0" IsVisible="{Binding Sheet.HasRevisions}" Foreground="{DynamicResource AppTextMuted}"/>
                             <ItemsControl Name="EmpRevisionsList" ItemsSource="{Binding Sheet.Revisions}" IsVisible="{Binding Sheet.HasRevisions}">
                                 <ItemsControl.ItemTemplate>
@@ -552,6 +623,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -591,13 +663,13 @@
                                             <TextBlock Text="{Binding Detail}" FontSize="12" Foreground="#B45309"/>
                                             <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
                                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0" IsVisible="{Binding $parent[Window].DataContext.IsEditable}">
-                                                <Button Classes="secondary" Padding="8,5" ToolTip.Tip="Uredi"
+                                                <Button Classes="icon" Width="32" Height="32" ToolTip.Tip="Uredi prekovremeni rad"
                                                         Command="{Binding $parent[Window].DataContext.EditOvertimeCommand}" CommandParameter="{Binding}">
-                                                    <materialIcons:MaterialIcon Kind="Pencil" Width="15" Height="15"/>
+                                                    <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
                                                 </Button>
-                                                <Button Classes="secondary" Padding="8,5" ToolTip.Tip="Obriši"
+                                                <Button Classes="icon" Width="32" Height="32" ToolTip.Tip="Obriši prekovremeni rad"
                                                         Command="{Binding $parent[Window].DataContext.DeleteOvertimeCommand}" CommandParameter="{Binding}">
-                                                    <materialIcons:MaterialIcon Kind="Delete" Width="15" Height="15"/>
+                                                    <materialIcons:MaterialIcon Kind="TrashCanOutline" Width="15" Height="15" Foreground="{DynamicResource AppDanger}"/>
                                                 </Button>
                                             </StackPanel>
                                         </StackPanel>

@@ -1353,4 +1353,47 @@ public class EmployeeViewModelTests
         Assert.IsFalse(vm.InTeam);
         Assert.AreEqual("", vm.StatusText);
     }
+
+    // ---- history tab, approvals only for approvers ------------------------------------------------------------------------------
+
+    [TestMethod]
+    public async Task HistoryTab_FillsTheWindowInPlaceOfTheDays_AndTheOtherTabsLeaveIt()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.IsApprover = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+        Assert.IsTrue(vm.ShowDaysBody);
+        Assert.IsFalse(vm.ShowHistoryBody);
+        Assert.IsTrue(vm.InSheet);
+
+        await vm.ShowHistoryCommand.ExecuteAsync(null);
+        Assert.IsTrue(vm.InHistory);
+        Assert.IsTrue(vm.ShowHistoryBody);
+        Assert.IsFalse(vm.ShowDaysBody, "the days and the side column give way to the history");
+        Assert.IsFalse(vm.ShowMineToolbar, "no entry buttons in the history");
+        Assert.IsFalse(vm.InSheet);
+        Assert.IsTrue(vm.ShowMonthNav, "the month can still be chosen");
+
+        await vm.ShowApprovalsCommand.ExecuteAsync(null);
+        Assert.IsFalse(vm.InHistory);
+        Assert.IsFalse(vm.ShowHistoryBody);
+
+        await vm.ShowHistoryCommand.ExecuteAsync(null);
+        await vm.ShowMineCommand.ExecuteAsync(null);
+        Assert.IsFalse(vm.InHistory);
+        Assert.IsTrue(vm.ShowDaysBody);
+        Assert.IsTrue(vm.ShowMineToolbar);
+    }
+
+    [TestMethod]
+    public async Task APersonWithNobodyBelowThem_IsNotAnApprover_SoThereIsNoApprovalsTab()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.IsApprover = false;
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsFalse(vm.IsApprover, "the approvals tab is bound to this");
+        Assert.IsTrue(vm.ShowDaysBody);
+    }
 }

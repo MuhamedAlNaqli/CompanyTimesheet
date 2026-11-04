@@ -79,6 +79,9 @@ public partial class EmployeeViewModel : ObservableObject
     /// <summary>The administrator's list of employees is shown</summary>
     [ObservableProperty] private bool _inAdmin;
 
+    /// <summary>The history of the own month (versions, who did what) is shown in place of the days</summary>
+    [ObservableProperty] private bool _inHistory;
+
     /// <summary>Someone else's timesheet is open (read only)</summary>
     [ObservableProperty] private bool _isReviewing;
 
@@ -106,12 +109,21 @@ public partial class EmployeeViewModel : ObservableObject
 
     public bool HasInfo => InfoText.Length > 0;
 
-    public bool ShowMineToolbar => IsConnected && InMine;
+    public bool ShowMineToolbar => IsConnected && InMine && !InHistory;
 
     public bool InMine => !InApprovals && !InTeam && !InAdmin;
 
+    /// <summary>The "My timesheet" tab itself (not its history)</summary>
+    public bool InSheet => InMine && !InHistory;
+
     /// <summary>The month, its totals and findings are on screen (not the team or the administrator's list)</summary>
     public bool ShowSheetBody => !InTeam && !InAdmin;
+
+    /// <summary>The days, with the side column of totals and findings</summary>
+    public bool ShowDaysBody => ShowSheetBody && !ShowHistoryBody;
+
+    /// <summary>The history of the own month fills the window</summary>
+    public bool ShowHistoryBody => InMine && InHistory && !IsReviewing;
 
     public bool ShowAdminToolbar => IsConnected && InAdmin;
 
@@ -141,6 +153,8 @@ public partial class EmployeeViewModel : ObservableObject
 
     partial void OnInAdminChanged(bool value) => RaiseModeChanged();
 
+    partial void OnInHistoryChanged(bool value) => RaiseModeChanged();
+
     partial void OnIsReviewingChanged(bool value) => RaiseModeChanged();
 
     partial void OnIsConnectedChanged(bool value) => RaiseModeChanged();
@@ -154,7 +168,10 @@ public partial class EmployeeViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowApprovalsToolbar));
         OnPropertyChanged(nameof(ShowMineToolbar));
         OnPropertyChanged(nameof(InMine));
+        OnPropertyChanged(nameof(InSheet));
         OnPropertyChanged(nameof(ShowSheetBody));
+        OnPropertyChanged(nameof(ShowDaysBody));
+        OnPropertyChanged(nameof(ShowHistoryBody));
         OnPropertyChanged(nameof(ShowAdminToolbar));
         OnPropertyChanged(nameof(ShowDeputies));
         OnPropertyChanged(nameof(ShowTeamToolbar));
@@ -503,6 +520,20 @@ public partial class EmployeeViewModel : ObservableObject
         InApprovals = false;
         InTeam = false;
         InAdmin = false;
+        InHistory = false;
+        IsReviewing = false;
+        _reviewCode = null;
+        await LoadAsync();
+    }
+
+    /// <summary>The versions that were submitted and who did what with the month on screen; the month buttons choose the month</summary>
+    [RelayCommand]
+    private async Task ShowHistoryAsync()
+    {
+        InApprovals = false;
+        InTeam = false;
+        InAdmin = false;
+        InHistory = true;
         IsReviewing = false;
         _reviewCode = null;
         await LoadAsync();
@@ -513,6 +544,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         InTeam = false;
         InAdmin = false;
+        InHistory = false;
         InApprovals = true;
         IsReviewing = false;
         IsViewingRevision = false;
@@ -632,6 +664,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         InApprovals = false;
         InAdmin = false;
+        InHistory = false;
         InTeam = true;
         Team.ShowSummary = false;
         IsReviewing = false;
@@ -756,6 +789,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         InApprovals = false;
         InTeam = false;
+        InHistory = false;
         InAdmin = true;
         IsReviewing = false;
         _reviewCode = null;
@@ -1007,6 +1041,7 @@ public partial class EmployeeViewModel : ObservableObject
         InApprovals = false;
         InTeam = false;
         InAdmin = false;
+        InHistory = false;
         IsReviewing = false;
         IsViewingRevision = false;
         IsConnected = false;

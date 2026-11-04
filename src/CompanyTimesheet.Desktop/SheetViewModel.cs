@@ -35,6 +35,8 @@ public sealed partial class SheetViewModel : ObservableObject
 
     public bool HasRevisions => Revisions.Count > 0;
 
+    public bool HasHistory => History.Count > 0;
+
     /// <summary>A month is on screen (the weekday headings of the calendar make no sense without one)</summary>
     public bool HasDays => Days.Count > 0;
 
@@ -154,6 +156,7 @@ public sealed partial class SheetViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasMessages));
         OnPropertyChanged(nameof(HasRevisions));
+        OnPropertyChanged(nameof(HasHistory));
         OnPropertyChanged(nameof(HasDays));
         OnPropertyChanged(nameof(HasIssues));
         OnPropertyChanged(nameof(NoIssues));

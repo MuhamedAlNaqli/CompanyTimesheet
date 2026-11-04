@@ -5,6 +5,7 @@
 
     <!-- Typography and page background -->
     <Style Selector="Window">
+        <Setter Property="Icon" Value="avares://CompanyTimesheet/Assets/app.ico"/>
         <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
         <Setter Property="FontFamily" Value="{DynamicResource AppFont}"/>
     </Style>

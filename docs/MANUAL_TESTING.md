@@ -33,7 +33,7 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 
 ### C. Povratak i verzije
 - Ako je Tarik vratio Lejlinu šihtaricu: kao Lejla pročitajte poruku, *Odgovori*, ispravite, *Predaj* ponovo.
-- U desnom panelu **Predate verzije** → *Otvori*: starija verzija samo za čitanje, uz traku za povratak.
+- Tab **Historija** → **Predate verzije** → ikona oka: starija verzija samo za čitanje, uz traku za povratak. Tu je i popis događaja (predaje, vraćanja, odluke) za izabrani mjesec.
 - Tarik odobrava, zatim Selma (drugi korak lanca). Poslije posljednjeg koraka status je **Odobreno**.
 
 ### D. Zamjena
