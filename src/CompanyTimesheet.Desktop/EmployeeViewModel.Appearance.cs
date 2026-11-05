@@ -15,8 +15,9 @@ namespace CompanyTimesheet.Desktop;
 /// <summary>A palette on the side bar: its colour, and whether it is the one in use</summary>
 public sealed partial class PaletteOption : ObservableObject
 {
-    public PaletteOption(PaletteInfo info, bool selected)
+    public PaletteOption(PaletteInfo info, bool selected, Action<string>? select = null)
     {
+        SelectCommand = new RelayCommand(() => select?.Invoke(info.Key));
         Key = info.Key;
         Name = info.Name;
         Swatch = new SolidColorBrush(Color.Parse(info.Swatch));
@@ -26,6 +27,8 @@ public sealed partial class PaletteOption : ObservableObject
     public string Key { get; }
 
     public string Name { get; }
+
+    public IRelayCommand SelectCommand { get; }
 
     public IBrush Swatch { get; }
 
@@ -39,10 +42,12 @@ public partial class EmployeeViewModel
 
     /// <summary>"system", "light" or "dark"</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsModeSystem), nameof(IsModeLight), nameof(IsModeDark))]
+    [NotifyPropertyChangedFor(nameof(IsModeSystem), nameof(IsModeLight), nameof(IsModeDark), nameof(ThemeToggleText))]
     private string _themeMode = EmployeePreferences.LoadThemeMode();
 
-    [ObservableProperty] private string _palette = EmployeePreferences.LoadPalette();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurrentPaletteName), nameof(CurrentPaletteSwatch))]
+    private string _palette = EmployeePreferences.LoadPalette();
 
     /// <summary>The side bar shows the names of its buttons; folded, only the icons</summary>
     [ObservableProperty]
@@ -57,17 +62,32 @@ public partial class EmployeeViewModel
 
     public bool IsModeDark => ThemeMode == "dark";
 
+    /// <summary>The button of the side bar names the theme it switches to: dark while the look is light, light otherwise</summary>
+    public string ThemeToggleText => IsModeDark ? "Svijetla tema" : "Tamna tema";
+
+    public string CurrentPaletteName => ThemeManager.Palettes.FirstOrDefault(p => p.Key == Palette)?.Name ?? "";
+
+    public IBrush CurrentPaletteSwatch => new SolidColorBrush(Color.Parse(ThemeManager.Palettes.FirstOrDefault(p => p.Key == Palette)?.Swatch ?? "#0F766E"));
+
     public IReadOnlyList<PaletteOption> PaletteOptions { get; private set; } = Array.Empty<PaletteOption>();
 
     private void InitAppearance()
     {
         if (!ThemeManager.IsKnownMode(ThemeMode)) ThemeMode = "light";
         if (!ThemeManager.IsKnownPalette(Palette)) Palette = ThemeManager.DefaultPalette;
-        PaletteOptions = ThemeManager.Palettes.Select(p => new PaletteOption(p, p.Key == Palette)).ToList();
+        PaletteOptions = ThemeManager.Palettes.Select(p => new PaletteOption(p, p.Key == Palette, key => Palette = key)).ToList();
     }
 
     [RelayCommand]
     private void ToggleSidebar() => SidebarExpanded = !SidebarExpanded;
+
+    /// <summary>One button: from the light theme to the dark one and back (from the theme of Windows it goes to dark)</summary>
+    [RelayCommand]
+    private void ToggleTheme() => ThemeMode = IsModeDark ? "light" : "dark";
+
+    /// <summary>Follow the theme of Windows, or go back to light</summary>
+    [RelayCommand]
+    private void ToggleSystemTheme() => ThemeMode = IsModeSystem ? "light" : "system";
 
     [RelayCommand]
     private void SetThemeMode(string? mode)

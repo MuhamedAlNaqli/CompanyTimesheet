@@ -5,6 +5,35 @@
              x:Class="CompanyTimesheet.Desktop.SideBar"
              x:DataType="em:EmployeeViewModel">
 
+    <UserControl.Styles>
+        <!-- The icon of the theme button: the moon while the look is light, the sun while it is dark. A click turns one into the other. -->
+        <Style Selector="Grid.theme-icons > materialIcons|MaterialIcon">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.30"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.30"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Grid.theme-icons > materialIcons|MaterialIcon.moon">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="rotate(0deg) scale(1)"/>
+        </Style>
+        <Style Selector="Grid.theme-icons > materialIcons|MaterialIcon.sun">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="rotate(-90deg) scale(0.5)"/>
+        </Style>
+        <Style Selector="Grid.theme-icons.dark > materialIcons|MaterialIcon.moon">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="rotate(90deg) scale(0.5)"/>
+        </Style>
+        <Style Selector="Grid.theme-icons.dark > materialIcons|MaterialIcon.sun">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="rotate(0deg) scale(1)"/>
+        </Style>
+    </UserControl.Styles>
+
     <!-- The side bar of both windows: it folds to icons. It holds the look of the program, the check for a new version and the sign-out. -->
     <Border Width="{Binding SidebarWidth}" Background="{DynamicResource AppSidebar}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,1,0">
         <Grid RowDefinitions="Auto,*,Auto" Margin="8,12">
@@ -17,37 +46,57 @@
             </Button>
 
             <StackPanel Grid.Row="2" Spacing="4">
-                <TextBlock Text="Izgled" Classes="label" Margin="12,0,0,2" IsVisible="{Binding SidebarExpanded}"/>
 
-                <!-- Light, dark or the theme of Windows -->
-                <WrapPanel Margin="4,0" HorizontalAlignment="Left">
-                    <Button Name="SidebarThemeLight" Classes="mode" Classes.active="{Binding IsModeLight}" Command="{Binding SetThemeModeCommand}" CommandParameter="light" ToolTip.Tip="Svijetla tema">
-                        <materialIcons:MaterialIcon Kind="WeatherSunny" Width="18" Height="18"/>
-                    </Button>
-                    <Button Name="SidebarThemeDark" Classes="mode" Classes.active="{Binding IsModeDark}" Command="{Binding SetThemeModeCommand}" CommandParameter="dark" ToolTip.Tip="Tamna tema">
-                        <materialIcons:MaterialIcon Kind="WeatherNight" Width="18" Height="18"/>
-                    </Button>
-                    <Button Name="SidebarThemeSystem" Classes="mode" Classes.active="{Binding IsModeSystem}" Command="{Binding SetThemeModeCommand}" CommandParameter="system" ToolTip.Tip="Prema postavci Windowsa">
-                        <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="18" Height="18"/>
-                    </Button>
-                </WrapPanel>
+                <!-- Light or dark: the button offers the other one -->
+                <Button Name="SidebarThemeToggle" Classes="sidebar-nav" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="{Binding ThemeToggleText}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Grid Classes="theme-icons" Classes.dark="{Binding IsModeDark}" Width="20" Height="20">
+                            <materialIcons:MaterialIcon Classes="moon" Kind="WeatherNight" Width="20" Height="20"/>
+                            <materialIcons:MaterialIcon Classes="sun" Kind="WeatherSunny" Width="20" Height="20"/>
+                        </Grid>
+                        <TextBlock Text="{Binding ThemeToggleText}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    </StackPanel>
+                </Button>
 
-                <!-- The colour palettes -->
-                <ItemsControl Name="SidebarPalettes" ItemsSource="{Binding PaletteOptions}" Margin="4,2,4,8">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="em:PaletteOption">
-                            <Button Classes="swatch" Classes.selected="{Binding IsSelected}" Background="{Binding Swatch}" ToolTip.Tip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
-                                    Command="{Binding $parent[UserControl].DataContext.SetPaletteCommand}" CommandParameter="{Binding Key}"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!-- The colour palettes live in a pop-up, so a longer list of palettes never crowds the side bar -->
+                <Button Name="SidebarPaletteButton" Classes="sidebar-nav" ToolTip.Tip="Boje aplikacije">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Width="20" Height="20" Padding="1">
+                            <Ellipse Fill="{Binding CurrentPaletteSwatch}"/>
+                        </Border>
+                        <TextBlock Text="{Binding CurrentPaletteName, StringFormat='Boje: {0}'}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="RightEdgeAlignedBottom">
+                            <StackPanel Name="SidebarPaletteMenu" Width="230" Spacing="2">
+                                <TextBlock Text="Paleta boja" Classes="label" Margin="12,4,0,4"/>
+                                <ItemsControl ItemsSource="{Binding PaletteOptions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="em:PaletteOption">
+                                            <Button Classes="sidebar-nav" Command="{Binding SelectCommand}" AutomationProperties.Name="{Binding Name}">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <Ellipse Width="16" Height="16" Fill="{Binding Swatch}" Margin="2,0,12,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                    <materialIcons:MaterialIcon Grid.Column="2" Kind="Check" Width="18" Height="18" IsVisible="{Binding IsSelected}"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Border Height="1" Background="{DynamicResource AppDivider}" Margin="0,6"/>
+                                <Button Name="SidebarSystemTheme" Classes="sidebar-nav" Command="{Binding ToggleSystemThemeCommand}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="18" Height="18" Margin="0,0,12,0"/>
+                                        <TextBlock Grid.Column="1" Text="Prati temu Windowsa" VerticalAlignment="Center"/>
+                                        <materialIcons:MaterialIcon Grid.Column="2" Kind="Check" Width="18" Height="18" IsVisible="{Binding IsModeSystem}"/>
+                                    </Grid>
+                                </Button>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
 
-                <Button Name="EmpUpdateButton" Classes="sidebar-nav quiet" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" ToolTip.Tip="Provjeri ažuriranja">
+                <Button Name="EmpUpdateButton" Classes="sidebar-nav" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" ToolTip.Tip="Provjeri ažuriranja">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="20" Height="20"/>
                         <TextBlock Text="Provjeri ažuriranja" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>

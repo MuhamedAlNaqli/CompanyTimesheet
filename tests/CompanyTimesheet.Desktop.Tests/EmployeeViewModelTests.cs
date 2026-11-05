@@ -1477,6 +1477,41 @@ public class EmployeeViewModelTests
     }
 
     [TestMethod]
+    public void TheThemeButton_OffersTheOtherTheme_AndGoesBackAndForth()
+    {
+        var (vm, _, _, _, _) = Create();
+        Assert.AreEqual("Tamna tema", vm.ThemeToggleText, "the look is light, so the button offers dark");
+
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.IsTrue(vm.IsModeDark);
+        Assert.AreEqual("Svijetla tema", vm.ThemeToggleText);
+
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.IsTrue(vm.IsModeLight);
+
+        vm.ToggleSystemThemeCommand.Execute(null);
+        Assert.IsTrue(vm.IsModeSystem);
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.IsTrue(vm.IsModeDark, "from the theme of Windows the button goes to dark");
+        vm.SetThemeModeCommand.Execute("system");
+        vm.ToggleSystemThemeCommand.Execute(null);
+        Assert.IsTrue(vm.IsModeLight, "the second click leaves the theme of Windows");
+    }
+
+    [TestMethod]
+    public void APaletteChosenInThePopup_BecomesTheCurrentOne()
+    {
+        var (vm, _, _, _, _) = Create();
+        Assert.AreEqual("Zelena", vm.CurrentPaletteName);
+
+        vm.PaletteOptions.Single(p => p.Key == "logosoft").SelectCommand.Execute(null);
+
+        Assert.AreEqual("logosoft", vm.Palette);
+        Assert.AreEqual("Logosoft", vm.CurrentPaletteName);
+        Assert.IsTrue(vm.PaletteOptions.Single(p => p.Key == "logosoft").IsSelected);
+    }
+
+    [TestMethod]
     public void ANameThatIsNotAThemeOrPalette_ChangesNothing()
     {
         var (vm, _, _, _, _) = Create();
