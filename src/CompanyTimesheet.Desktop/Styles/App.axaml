@@ -9,6 +9,14 @@
         <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
         <Setter Property="FontFamily" Value="{DynamicResource AppFont}"/>
     </Style>
+    <!-- Pop-ups (the palette list) take the colours of the theme, so the text always matches the background -->
+    <Style Selector="FlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource AppSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderStrong}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppText}"/>
+        <Setter Property="CornerRadius" Value="12"/>
+    </Style>
     <Style Selector="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource AppFont}"/>
     </Style>
