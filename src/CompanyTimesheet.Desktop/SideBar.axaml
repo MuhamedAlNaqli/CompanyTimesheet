@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:em="using:CompanyTimesheet.Desktop"
+             x:Class="CompanyTimesheet.Desktop.SideBar"
+             x:DataType="em:EmployeeViewModel">
+
+    <!-- The side bar of both windows: it folds to icons. It holds the look of the program, the check for a new version and the sign-out. -->
+    <Border Width="{Binding SidebarWidth}" Background="{DynamicResource AppSidebar}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="8,12">
+
+            <Button Name="SidebarToggleButton" Grid.Row="0" Classes="sidebar-nav" Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="Proširi ili skupi izbornik">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <materialIcons:MaterialIcon Kind="Menu" Width="20" Height="20"/>
+                    <TextBlock Text="Evidencija" FontWeight="SemiBold" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                </StackPanel>
+            </Button>
+
+            <StackPanel Grid.Row="2" Spacing="4">
+                <TextBlock Text="Izgled" Classes="label" Margin="12,0,0,2" IsVisible="{Binding SidebarExpanded}"/>
+
+                <!-- Light, dark or the theme of Windows -->
+                <WrapPanel Margin="4,0" HorizontalAlignment="Left">
+                    <Button Name="SidebarThemeLight" Classes="mode" Classes.active="{Binding IsModeLight}" Command="{Binding SetThemeModeCommand}" CommandParameter="light" ToolTip.Tip="Svijetla tema">
+                        <materialIcons:MaterialIcon Kind="WeatherSunny" Width="18" Height="18"/>
+                    </Button>
+                    <Button Name="SidebarThemeDark" Classes="mode" Classes.active="{Binding IsModeDark}" Command="{Binding SetThemeModeCommand}" CommandParameter="dark" ToolTip.Tip="Tamna tema">
+                        <materialIcons:MaterialIcon Kind="WeatherNight" Width="18" Height="18"/>
+                    </Button>
+                    <Button Name="SidebarThemeSystem" Classes="mode" Classes.active="{Binding IsModeSystem}" Command="{Binding SetThemeModeCommand}" CommandParameter="system" ToolTip.Tip="Prema postavci Windowsa">
+                        <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="18" Height="18"/>
+                    </Button>
+                </WrapPanel>
+
+                <!-- The colour palettes -->
+                <ItemsControl Name="SidebarPalettes" ItemsSource="{Binding PaletteOptions}" Margin="4,2,4,8">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="em:PaletteOption">
+                            <Button Classes="swatch" Classes.selected="{Binding IsSelected}" Background="{Binding Swatch}" ToolTip.Tip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
+                                    Command="{Binding $parent[UserControl].DataContext.SetPaletteCommand}" CommandParameter="{Binding Key}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Name="EmpUpdateButton" Classes="sidebar-nav quiet" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" ToolTip.Tip="Provjeri ažuriranja">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="20" Height="20"/>
+                        <TextBlock Text="Provjeri ažuriranja" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    </StackPanel>
+                </Button>
+                <Button Name="EmpLogoutButton" Classes="sidebar-nav" Command="{Binding LogoutCommand}" ToolTip.Tip="Odjava">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <materialIcons:MaterialIcon Kind="Logout" Width="20" Height="20"/>
+                        <TextBlock Text="Odjava" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

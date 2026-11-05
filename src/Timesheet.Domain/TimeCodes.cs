@@ -26,7 +26,7 @@ public enum CodeUnit
 }
 
 /// <summary>One category of the legend of the sheet</summary>
-public sealed record TimeCode(int Code, CodeColour Colour, CodeUnit Unit)
+public sealed record TimeCode(int Code, CodeColour Colour, CodeUnit Unit, bool Active = true)
 {
     public bool IsOvertime => Colour == CodeColour.Red;
 
@@ -78,10 +78,15 @@ public static class Codes
     public static bool IsSickLeave(int code) => code is SickUpTo42Days or SickOver42Days;
 }
 
-/// <summary>The catalogue of the 22 codes of the legend (the analysis says 20; the legend of the sheet lists 22)</summary>
+/// <summary>
+/// The catalogue of the codes of the legend. It starts as the 22 codes of the legend of the sheet (the analysis says 20); the server
+/// keeps the codes in its database, where the administrator can add codes and change them, and hands the list to the programs
+/// (<see cref="Configure"/>). A code that was switched off stays here, so that old sheets still read, but <see cref="TimeCode.Active"/> is false.
+/// </summary>
 public static class TimeCodes
 {
-    public static IReadOnlyList<TimeCode> All { get; } = new[]
+    /// <summary>The codes every installation has; the database is seeded with them</summary>
+    public static IReadOnlyList<TimeCode> Defaults { get; } = new[]
     {
         new TimeCode(Codes.RegularWork, CodeColour.Green, CodeUnit.Hours),
         new TimeCode(Codes.PaidLeave, CodeColour.Green, CodeUnit.Day),
@@ -107,12 +112,35 @@ public static class TimeCodes
         new TimeCode(Codes.NightHolidayOvertime, CodeColour.Red, CodeUnit.Hours),
     };
 
-    private static readonly Dictionary<int, TimeCode> ByCode = All.ToDictionary(c => c.Code);
+    /// <summary>The list and its index are swapped together, so a reader never sees one without the other</summary>
+    private sealed record Catalogue(IReadOnlyList<TimeCode> All, Dictionary<int, TimeCode> ByCode);
 
-    public static bool TryGet(int code, out TimeCode timeCode) => ByCode.TryGetValue(code, out timeCode!);
+    private static volatile Catalogue _current = Build(Defaults);
+
+    private static Catalogue Build(IEnumerable<TimeCode> codes)
+    {
+        var list = codes.OrderBy(c => c.Code).ToList();
+        return new Catalogue(list, list.ToDictionary(c => c.Code));
+    }
+
+    /// <summary>Every code, active or not, in the order of the numbers</summary>
+    public static IReadOnlyList<TimeCode> All => _current.All;
+
+    /// <summary>Replaces the catalogue with the one the server holds. An empty list is ignored: the programs always know some codes.</summary>
+    public static void Configure(IEnumerable<TimeCode> codes)
+    {
+        var list = codes.ToList();
+        if (list.Count == 0) return;
+        _current = Build(list);
+    }
+
+    /// <summary>Back to the codes every installation has (for tests)</summary>
+    public static void Reset() => _current = Build(Defaults);
+
+    public static bool TryGet(int code, out TimeCode timeCode) => _current.ByCode.TryGetValue(code, out timeCode!);
 
     public static TimeCode Get(int code) =>
-        ByCode.TryGetValue(code, out var found) ? found : throw new ArgumentOutOfRangeException(nameof(code), code, "Unknown time code");
+        _current.ByCode.TryGetValue(code, out var found) ? found : throw new ArgumentOutOfRangeException(nameof(code), code, "Unknown time code");
 
-    public static bool Exists(int code) => ByCode.ContainsKey(code);
+    public static bool Exists(int code) => _current.ByCode.ContainsKey(code);
 }

@@ -122,13 +122,40 @@ public sealed partial class AdminViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowList))]
     private bool _showChart;
 
-    public bool ShowList => !ShowChart;
+    /// <summary>The codes of the legend instead of the people</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowList), nameof(ShowPeople))]
+    private bool _showCodes;
+
+    public bool ShowList => !ShowChart && !ShowCodes;
+
+    /// <summary>The people (table or chart), not the codes</summary>
+    public bool ShowPeople => !ShowCodes;
+
+    public ObservableCollection<CodeRow> Codes { get; } = new();
+
+    [ObservableProperty] private string _codesSummary = "";
 
     [RelayCommand]
-    private void ShowListView() => ShowChart = false;
+    private void ShowListView()
+    {
+        ShowCodes = false;
+        ShowChart = false;
+    }
 
     [RelayCommand]
-    private void ShowChartView() => ShowChart = true;
+    private void ShowChartView()
+    {
+        ShowCodes = false;
+        ShowChart = true;
+    }
+
+    [RelayCommand]
+    private void ShowCodesView()
+    {
+        ShowChart = false;
+        ShowCodes = true;
+    }
 
     public IReadOnlyList<EmployeeDto> Employees { get; private set; } = Array.Empty<EmployeeDto>();
 
@@ -162,6 +189,11 @@ public sealed partial class AdminViewModel : ObservableObject
         SummaryText = $"Zaposlenika: {_all.Count}. Aktivnih bez korisničkog imena: {without}.";
         ApplyFilter();
         BuildChart();
+
+        var codes = await client.GetCodesAsync();
+        Codes.Clear();
+        foreach (var code in codes.OrderBy(c => c.Code)) Codes.Add(new CodeRow(code));
+        CodesSummary = $"Šifara: {Codes.Count}, isključenih: {Codes.Count(c => !c.IsActive)}. Nova šifra odmah postaje dostupna svim zaposlenicima, bez nove verzije programa.";
     }
 
     /// <summary>
@@ -226,6 +258,11 @@ public sealed partial class AdminViewModel : ObservableObject
         "overlap" => "Već postoji zamjena za dio ovog perioda. Prvo je uklonite.",
         "invalid-period" => "Period nije ispravan: kraj je prije početka, već je prošao ili je duži od godine.",
         "invalid-deputy" => "Niko ne može biti svoja zamjena.",
+        "code-exists" => "Ta šifra već postoji.",
+        "system-code" => "Program koristi tu šifru u svojim pravilima: može se samo preimenovati.",
+        "code-in-use" => "Šihtarice već koriste tu šifru, pa joj se boja i vrsta unosa ne mogu mijenjati. Isključite je i dodajte novu.",
+        "overtime-code" => "Šifre za prekovremeni rad dolaze s programom: prekovremeni se računa iz intervala.",
+        "invalid-kind" => "Boja ili vrsta unosa nisu ispravni.",
         _ => ex.Message
     };
 }

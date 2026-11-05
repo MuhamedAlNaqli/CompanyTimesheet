@@ -5,6 +5,7 @@ using CompanyTimesheet.Desktop.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Net;
+using Timesheet.Domain;
 
 namespace CompanyTimesheet.Desktop.Tests;
 
@@ -27,8 +28,15 @@ public class EmployeeViewModelTests
 
         private Task<T> Record<T>(string call, T value) { Calls.Add(call); return Task.FromResult(value); }
 
+        public string? ServerTheme { get; set; }
+        public string? ServerPalette { get; set; }
+        public List<TimeCodeDto> ServerCodes { get; set; } = new();
+        public List<PreferencesRequest> Preferences { get; } = new();
+
         public Task<MeDto> GetMeAsync(CancellationToken ct = default) =>
-            Record("me", new MeDto("Z-001", "Amra Adžamija", @"corp\amra", IsAdmin, IsApprover, false, "Z-002", new[] { "Z-002" }, "Test", false, SheetExport));
+            Record("me", new MeDto("Z-001", "Amra Adžamija", @"corp\amra", IsAdmin, IsApprover, false, "Z-002", new[] { "Z-002" }, "Test", false, SheetExport, ServerTheme, ServerPalette));
+
+        public Task SetPreferencesAsync(PreferencesRequest request, CancellationToken ct = default) { Preferences.Add(request); return Task.CompletedTask; }
 
         public Task<SheetDto> GetSheetAsync(int year, int month, CancellationToken ct = default) { Calls.Add($"sheet {year}-{month}"); return GetSheet(year, month); }
         public Task<SheetDto> GetReviewAsync(string code, int year, int month, CancellationToken ct = default) { Calls.Add($"review {code} {year}-{month}"); return GetReview(code, year, month); }
@@ -49,7 +57,7 @@ public class EmployeeViewModelTests
         public Task<SheetDto> AnswerAsync(int year, int month, int index, string answer, CancellationToken ct = default) => Record($"answer {index}: {answer}", Sheets.Make(year, month));
 
         public Task<AuthDiagnosticsDto> GetDiagnosticsAsync(CancellationToken ct = default) => throw new NotSupportedException();
-        public Task<List<TimeCodeDto>> GetTimeCodesAsync(CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<List<TimeCodeDto>> GetTimeCodesAsync(CancellationToken ct = default) => Task.FromResult(ServerCodes);
         public Task<SheetDto> ClearEntryAsync(int year, int month, DateOnly date, int code, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<AbsencePreviewDto> PreviewAbsenceAsync(int year, int month, AbsenceRangeRequest request, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<SheetDto> DeleteOvertimeAsync(int year, int month, int id, CancellationToken ct = default) => throw new NotSupportedException();
@@ -111,6 +119,9 @@ public class EmployeeViewModelTests
         public string? Csv { get; set; }
         public Task<AdminEditResult?> AdminEditAsync(AdminEmployeeViewModel viewModel) { Asked.Add("admin-edit " + viewModel.Title); return Task.FromResult(AdminEdit); }
         public Task<string?> PickCsvAsync() { Asked.Add("pick-csv"); return Task.FromResult(Csv); }
+
+        public SaveCodeRequest? CodeEdit { get; set; }
+        public Task<SaveCodeRequest?> CodeEditAsync(CodeEditViewModel viewModel) { Asked.Add("code-edit " + viewModel.Title); return Task.FromResult(CodeEdit); }
 
         public Task<bool> ConfirmAsync(string title, string message) { Asked.Add(title + ": " + message); return Task.FromResult(Answer); }
         public Task<EntryResult?> EntryAsync(EntryViewModel viewModel) { Asked.Add("entry"); return Task.FromResult(Entry); }
@@ -194,6 +205,22 @@ public class EmployeeViewModelTests
             return Task.CompletedTask;
         }
         public Task RemoveCredentialsAsync(string code, CancellationToken ct = default) { Calls.Add($"remove {code}"); Maybe(); return Task.CompletedTask; }
+        public List<CodeDefinitionDto> Codes { get; set; } = new();
+        public Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default) { Calls.Add("codes"); return Task.FromResult(Codes); }
+        public Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default)
+        {
+            Calls.Add($"add-code {request.Code} {request.NameBs} {request.Colour} {request.Unit}");
+            Maybe();
+            var added = new CodeDefinitionDto(request.Code, request.NameBs, request.NameEn, request.Colour, request.Unit, request.IsActive, false, false);
+            Codes.Add(added);
+            return Task.FromResult(added);
+        }
+        public Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default)
+        {
+            Calls.Add($"update-code {code} {request.NameBs} active={request.IsActive}");
+            Maybe();
+            return Task.FromResult(Codes.First(c => c.Code == code));
+        }
         public bool AuditIntact { get; set; } = true;
         public Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default) =>
             Task.FromResult(new AuditVerificationDto(AuditIntact, 120, 0, AuditIntact ? null : 77, null));
@@ -844,7 +871,7 @@ public class EmployeeViewModelTests
             new SetCredentialsRequest("amra", "Start-password-1", true), RemoveCredentials: false);
         await vm.EditEmployeeCommand.ExecuteAsync(vm.Admin.Rows[0]);
 
-        CollectionAssert.AreEqual(new[] { "update Z-001 Amra A. supervisor=Z-002", "set Z-001 amra True", "employees", "credentials" }, admin.Calls);
+        CollectionAssert.AreEqual(new[] { "update Z-001 Amra A. supervisor=Z-002", "set Z-001 amra True", "employees", "credentials", "codes" }, admin.Calls);
         Assert.AreEqual("Sačuvano: Amra Adžamija.", vm.InfoText);
     }
 
@@ -951,7 +978,7 @@ public class EmployeeViewModelTests
         await vm.AddEmployeeCommand.ExecuteAsync(null);
 
         StringAssert.Contains(dialogs.Asked.Last(), "Nova osoba");
-        CollectionAssert.AreEqual(new[] { "create  Nova Osoba supervisor=Z-002", "set Z-007 nova True", "employees", "credentials" }, admin.Calls);
+        CollectionAssert.AreEqual(new[] { "create  Nova Osoba supervisor=Z-002", "set Z-007 nova True", "employees", "credentials", "codes" }, admin.Calls);
         Assert.AreEqual("Dodano: Nova Osoba (Z-007).", vm.InfoText);
         Assert.IsTrue(vm.Admin.Rows.Any(r => r.Code == "Z-007"));
     }
@@ -1395,5 +1422,187 @@ public class EmployeeViewModelTests
 
         Assert.IsFalse(vm.IsApprover, "the approvals tab is bound to this");
         Assert.IsTrue(vm.ShowDaysBody);
+    }
+
+    // ---- look of the program: theme, palette, side bar ------------------------------------------------------------------------------
+
+    [TestInitialize]
+    public void KeepChoicesOutOfTheProfile()
+    {
+        EmployeePreferences.FolderOverride = Path.Combine(Path.GetTempPath(), "CompanyTimesheetTests-" + Guid.NewGuid().ToString("N"));
+        TimeCodes.Reset();
+        TimeCodeNames.Reset();
+    }
+
+    [TestCleanup]
+    public void ForgetTheChoices()
+    {
+        TimeCodes.Reset();
+        TimeCodeNames.Reset();
+        try { if (EmployeePreferences.FolderOverride != null) Directory.Delete(EmployeePreferences.FolderOverride, true); } catch (IOException) { }
+        EmployeePreferences.FolderOverride = null;
+    }
+
+    [TestMethod]
+    public void TheLookStartsLightWithTheDefaultPalette_AndEveryPaletteIsOffered()
+    {
+        var (vm, _, _, _, _) = Create();
+
+        Assert.AreEqual("light", vm.ThemeMode);
+        Assert.IsTrue(vm.IsModeLight);
+        Assert.AreEqual("teal", vm.Palette);
+        CollectionAssert.AreEqual(new[] { "teal", "logosoft", "blue", "graphite" }, vm.PaletteOptions.Select(p => p.Key).ToArray());
+        Assert.IsTrue(vm.PaletteOptions.Single(p => p.Key == "teal").IsSelected);
+    }
+
+    [TestMethod]
+    public async Task ChoosingATheme_IsKeptOnThisComputer_AndSentToTheServer()
+    {
+        var (vm, client, _, _, _) = Create();
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        vm.SetThemeModeCommand.Execute("dark");
+        vm.SetPaletteCommand.Execute("logosoft");
+        await Task.Yield();
+
+        Assert.IsTrue(vm.IsModeDark);
+        Assert.IsFalse(vm.IsModeLight);
+        Assert.IsTrue(vm.PaletteOptions.Single(p => p.Key == "logosoft").IsSelected);
+        Assert.IsFalse(vm.PaletteOptions.Single(p => p.Key == "teal").IsSelected);
+        Assert.AreEqual("dark", EmployeePreferences.LoadThemeMode());
+        Assert.AreEqual("logosoft", EmployeePreferences.LoadPalette());
+        Assert.AreEqual(2, client.Preferences.Count);
+        Assert.AreEqual("dark", client.Preferences[0].ThemeMode);
+        Assert.AreEqual("logosoft", client.Preferences[1].Palette);
+    }
+
+    [TestMethod]
+    public void ANameThatIsNotAThemeOrPalette_ChangesNothing()
+    {
+        var (vm, _, _, _, _) = Create();
+
+        vm.SetThemeModeCommand.Execute("neon");
+        vm.SetPaletteCommand.Execute("pink");
+
+        Assert.AreEqual("light", vm.ThemeMode);
+        Assert.AreEqual("teal", vm.Palette);
+    }
+
+    [TestMethod]
+    public async Task TheChoiceSavedOnTheAccount_WinsOverTheOneOfThisComputer_AndIsNotSentBack()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.ServerTheme = "dark";
+        client.ServerPalette = "graphite";
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.AreEqual("dark", vm.ThemeMode);
+        Assert.AreEqual("graphite", vm.Palette);
+        Assert.AreEqual(0, client.Preferences.Count, "what the server told us is not saved on the server again");
+    }
+
+    [TestMethod]
+    public void TheSideBarCanBeFolded_AndRemembersIt()
+    {
+        var (vm, _, _, _, _) = Create();
+        Assert.IsTrue(vm.SidebarExpanded);
+        var open = vm.SidebarWidth;
+
+        vm.ToggleSidebarCommand.Execute(null);
+
+        Assert.IsFalse(vm.SidebarExpanded);
+        Assert.IsTrue(vm.SidebarWidth < open);
+        Assert.IsFalse(EmployeePreferences.LoadSidebarExpanded());
+    }
+
+    // ---- codes of the legend ---------------------------------------------------------------------------------------------------------
+
+    [TestMethod]
+    public async Task TheCodesOfTheServer_ReplaceTheKnownOnes_SoANewCodeCanBeEntered()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.ServerCodes = TimeCodes.Defaults
+            .Select(c => new TimeCodeDto(c.Code, TimeCodeNames.Bs(c.Code), TimeCodeNames.En(c.Code), c.Colour.ToString(), c.Unit.ToString(), c.InMonthlyFund, c.IsOvertime))
+            .Append(new TimeCodeDto(1050, "Edukacija", "Training", "Green", "Day", true, false))
+            .ToList();
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsTrue(TimeCodes.Exists(1050));
+        Assert.IsTrue(TimeCodes.Get(1050).IsAbsence);
+        Assert.AreEqual("Edukacija", TimeCodeNames.Bs(1050));
+    }
+
+    [TestMethod]
+    public async Task ACodeThatWasSwitchedOff_IsNotOffered_ExceptOnTheEntryThatHasIt()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.ServerCodes = TimeCodes.Defaults
+            .Select(c => new TimeCodeDto(c.Code, TimeCodeNames.Bs(c.Code), TimeCodeNames.En(c.Code), c.Colour.ToString(), c.Unit.ToString(), c.InMonthlyFund, c.IsOvertime, c.Code != 1021))
+            .ToList();
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        var fresh = new EntryViewModel(2026, 9, _ => DayType.Working, _ => Task.FromResult(new AbsencePreviewDto(0, new List<DateOnly>(), new List<SkippedDayDto>())));
+        Assert.IsFalse(fresh.Codes.Any(c => c.Code.Code == 1021), "a new entry cannot use a switched-off code");
+        Assert.IsTrue(fresh.Codes.Any(c => c.Code.Code == 1020));
+    }
+
+    [TestMethod]
+    public async Task TheAdministratorAddsACode_AndTheListIsShownAgain()
+    {
+        var (vm, client, dialogs, _, _) = Create();
+        client.IsAdmin = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+        await vm.ShowAdminCommand.ExecuteAsync(null);
+        var admin = (FakeAdmin)typeof(EmployeeViewModel).GetField("_admin", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(vm)!;
+        admin.Calls.Clear();
+
+        dialogs.CodeEdit = new SaveCodeRequest(1050, "Edukacija", "", "Green", "Day", true);
+        await vm.AddCodeCommand.ExecuteAsync(null);
+
+        CollectionAssert.Contains(admin.Calls, "add-code 1050 Edukacija Green Day");
+        Assert.AreEqual(1, vm.Admin.Codes.Count);
+        Assert.AreEqual("Edukacija", vm.Admin.Codes[0].Name);
+        StringAssert.Contains(vm.InfoText, "1050");
+
+        dialogs.CodeEdit = null;
+        admin.Calls.Clear();
+        await vm.EditCodeCommand.ExecuteAsync(vm.Admin.Codes[0]);
+        Assert.AreEqual(0, admin.Calls.Count, "cancelling the dialog changes nothing");
+    }
+
+    [TestMethod]
+    public void TheCodeDialog_RefusesANumberOutsideTheRange_AndAnEmptyName()
+    {
+        var dialog = new CodeEditViewModel(null) { CodeText = "12", NameBs = "x" };
+        dialog.SaveCommand.Execute(null);
+        Assert.IsNull(dialog.Result);
+        StringAssert.Contains(dialog.Error, "1000");
+
+        dialog.CodeText = "1050";
+        dialog.NameBs = " ";
+        dialog.SaveCommand.Execute(null);
+        Assert.IsNull(dialog.Result);
+
+        dialog.NameBs = "Edukacija";
+        dialog.SaveCommand.Execute(null);
+        Assert.AreEqual(1050, dialog.Result!.Code);
+        Assert.IsFalse(dialog.Colours.Any(c => c.Value == "Red"), "a new code cannot be overtime");
+    }
+
+    [TestMethod]
+    public void ASystemCode_CanOnlyBeRenamed_AndACodeInUseKeepsItsMeaning()
+    {
+        var system = new CodeEditViewModel(new CodeDefinitionDto(1010, "Redovan rad", "Regular work", "Green", "Hours", true, true, true));
+        Assert.IsFalse(system.CanChangeMeaning);
+        Assert.IsFalse(system.CanSwitchOff);
+
+        var used = new CodeEditViewModel(new CodeDefinitionDto(1050, "Edukacija", "Training", "Green", "Day", true, false, true));
+        Assert.IsFalse(used.CanChangeMeaning);
+        Assert.IsTrue(used.CanSwitchOff);
+
+        var unused = new CodeEditViewModel(new CodeDefinitionDto(1051, "Novo", "New", "Green", "Day", true, false, false));
+        Assert.IsTrue(unused.CanChangeMeaning);
     }
 }

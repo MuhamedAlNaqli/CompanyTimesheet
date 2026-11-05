@@ -11,6 +11,9 @@ public interface ICompanyApiClient
 
     Task<List<TimeCodeDto>> GetTimeCodesAsync(CancellationToken ct = default);
 
+    /// <summary>Saves the theme and the colour palette of the caller on the server, so they follow the person to every computer</summary>
+    Task SetPreferencesAsync(PreferencesRequest request, CancellationToken ct = default);
+
     Task<SheetDto> GetSheetAsync(int year, int month, CancellationToken ct = default);
 
     Task<SheetDto> SetEntryAsync(int year, int month, DateOnly date, SetEntryRequest request, CancellationToken ct = default);

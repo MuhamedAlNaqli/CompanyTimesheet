@@ -166,6 +166,63 @@ public static class AdminEndpoints
             return Results.Ok(list);
         });
 
+        // ---- Codes of the legend -----------------------------------------------------------------------------------
+
+        admin.MapGet("/codes", async (CompanyDbContext db) =>
+        {
+            var used = (await db.SheetEntries.AsNoTracking().Select(e => e.Code).Distinct().ToListAsync()).ToHashSet();
+            var rows = await db.Codes.AsNoTracking().OrderBy(c => c.Code).ToListAsync();
+            return Results.Ok(rows.Select(c => ToDto(c, used.Contains(c.Code))));
+        });
+
+        admin.MapPost("/codes", async (SaveCodeRequest request, CompanyDbContext db, AuditService audit) =>
+        {
+            if (CheckCode(request, isNew: true) is { } refusal) return refusal;
+            if (await db.Codes.AnyAsync(c => c.Code == request.Code))
+                return Results.Conflict(new ApiErrorDto("code-exists", $"The code {request.Code} already exists."));
+
+            var row = new CodeDefinition
+            {
+                Code = request.Code,
+                NameBs = request.NameBs.Trim(),
+                NameEn = string.IsNullOrWhiteSpace(request.NameEn) ? request.NameBs.Trim() : request.NameEn.Trim(),
+                Colour = request.Colour,
+                Unit = request.Unit,
+                IsActive = request.IsActive,
+                IsSystem = false
+            };
+            db.Codes.Add(row);
+            audit.Record("CodeAdded", "Code", row.Code.ToString(), $"{row.NameBs} ({row.Colour}, {row.Unit})");
+            await db.SaveChangesAsync();
+            await CodeCatalog.LoadAsync(db);
+            return Results.Ok(ToDto(row, false));
+        });
+
+        admin.MapPut("/codes/{code:int}", async (int code, SaveCodeRequest request, CompanyDbContext db, AuditService audit) =>
+        {
+            var row = await db.Codes.FirstOrDefaultAsync(c => c.Code == code);
+            if (row == null) return NotFound("code");
+            if (CheckCode(request, isNew: false) is { } refusal) return refusal;
+
+            var inUse = await db.SheetEntries.AnyAsync(e => e.Code == code);
+            var changesMeaning = request.Colour != row.Colour || request.Unit != row.Unit;
+            if (row.IsSystem && (changesMeaning || !request.IsActive))
+                return Results.BadRequest(new ApiErrorDto("system-code", "The rules of the program rely on this code: it can only be renamed."));
+            if (inUse && changesMeaning)
+                return Results.BadRequest(new ApiErrorDto("code-in-use", "Sheets already use this code, so its colour and unit cannot change. Switch it off and add a new code."));
+
+            var details = $"{row.NameBs} -> {request.NameBs.Trim()}, active {row.IsActive} -> {request.IsActive}, {row.Colour}/{row.Unit} -> {request.Colour}/{request.Unit}";
+            row.NameBs = request.NameBs.Trim();
+            row.NameEn = string.IsNullOrWhiteSpace(request.NameEn) ? row.NameBs : request.NameEn.Trim();
+            row.Colour = request.Colour;
+            row.Unit = request.Unit;
+            row.IsActive = request.IsActive;
+            audit.Record("CodeChanged", "Code", code.ToString(), details);
+            await db.SaveChangesAsync();
+            await CodeCatalog.LoadAsync(db);
+            return Results.Ok(ToDto(row, inUse));
+        });
+
         // ---- Timesheets --------------------------------------------------------------------------------------------
 
         // Hands the step a submitted timesheet waits at to somebody else (the approver left, or is away for long)
@@ -199,6 +256,25 @@ public static class AdminEndpoints
 
     private static IResult? TooLong(string text, int max, string what) =>
         text.Length > max ? Results.BadRequest(new ApiErrorDto("too-long", $"{what} can have at most {max} characters; this one has {text.Length}.")) : null;
+
+    private static CodeDefinitionDto ToDto(CodeDefinition c, bool inUse) =>
+        new(c.Code, c.NameBs, c.NameEn, c.Colour, c.Unit, c.IsActive, c.IsSystem, inUse);
+
+    /// <summary>What a code may be. Overtime (red) is worked out from the intervals by the program, so a new code cannot be overtime.</summary>
+    private static IResult? CheckCode(SaveCodeRequest request, bool isNew)
+    {
+        if (request.Code < CodeCatalog.FirstCode || request.Code > CodeCatalog.LastCode)
+            return Results.BadRequest(new ApiErrorDto("invalid-code", $"The code is a number from {CodeCatalog.FirstCode} to {CodeCatalog.LastCode}."));
+        var name = request.NameBs?.Trim() ?? "";
+        if (name.Length == 0) return Results.BadRequest(new ApiErrorDto("name-required", "The code needs a name."));
+        if (TooLong(name, Limits.Name, "The name") is { } tooLong) return tooLong;
+        if (TooLong(request.NameEn?.Trim() ?? "", Limits.Name, "The English name") is { } tooLongEn) return tooLongEn;
+        if (!Enum.TryParse<CodeUnit>(request.Unit, out _) || !Enum.TryParse<CodeColour>(request.Colour, out var colour))
+            return Results.BadRequest(new ApiErrorDto("invalid-kind", "Unknown colour or unit."));
+        if (isNew && colour == CodeColour.Red)
+            return Results.BadRequest(new ApiErrorDto("overtime-code", "Overtime codes come with the program: overtime is worked out from the intervals."));
+        return null;
+    }
 
     private static IResult NotFound(string what) => Results.NotFound(new ApiErrorDto("not-found", $"The {what} was not found."));
 

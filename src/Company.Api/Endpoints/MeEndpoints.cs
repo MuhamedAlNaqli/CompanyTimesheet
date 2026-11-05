@@ -47,14 +47,32 @@ public static class MeEndpoints
                 outcome.Chain?.Approvers ?? Array.Empty<string>(),
                 mode.ToString(),
                 features.FinanceAndLegal && employee.IsFinance,
-                features.SheetExport));
+                features.SheetExport,
+                employee.ThemeMode,
+                employee.Palette));
         });
 
         // What is due for the caller today: the rules are the domain library's, this only gathers the facts
         registered.MapGet("/reminders", (ClaimsPrincipal user, ReminderService service) => service.ForAsync(Identities.EmployeeCode(user)!));
 
         registered.MapGet("/timecodes", () => Results.Ok(TimeCodes.All.Select(c => new TimeCodeDto(
-            c.Code, TimeCodeNames.Bs(c.Code), TimeCodeNames.En(c.Code), c.Colour.ToString(), c.Unit.ToString(), c.InMonthlyFund, c.IsOvertime))));
+            c.Code, TimeCodeNames.Bs(c.Code), TimeCodeNames.En(c.Code), c.Colour.ToString(), c.Unit.ToString(), c.InMonthlyFund, c.IsOvertime, c.Active))));
+
+        // The person chooses the theme and the colours of their own screen; it follows them to every computer
+        registered.MapPut("/me/preferences", async (PreferencesRequest request, ClaimsPrincipal user, CompanyDbContext db) =>
+        {
+            var theme = request.ThemeMode?.Trim().ToLowerInvariant();
+            var palette = request.Palette?.Trim().ToLowerInvariant();
+            if (theme != null && !UiPreferences.ThemeModes.Contains(theme)) return Results.BadRequest(new ApiErrorDto("invalid-theme", "Unknown theme."));
+            if (palette != null && !UiPreferences.Palettes.Contains(palette)) return Results.BadRequest(new ApiErrorDto("invalid-palette", "Unknown palette."));
+
+            var code = Identities.EmployeeCode(user)!;
+            var employee = await db.Employees.FirstAsync(e => e.Code == code);
+            if (theme != null) employee.ThemeMode = theme;
+            if (palette != null) employee.Palette = palette;
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
 
         // The days of a month for the caller: weekends, state holidays and the caller's own religious holidays
         registered.MapGet("/calendar/{year:int}/{month:int}", async (int year, int month, ClaimsPrincipal user, CompanyDbContext db) =>

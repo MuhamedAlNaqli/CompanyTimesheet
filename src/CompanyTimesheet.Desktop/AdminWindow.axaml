@@ -9,24 +9,15 @@
         WindowStartupLocation="CenterScreen">
 
     <!-- The window of an administrator: the people and who reports to whom, and nothing of a timesheet -->
-    <Grid Margin="24,20" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+    <Grid ColumnDefinitions="Auto,*">
+    <em:SideBar Grid.Column="0"/>
+    <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
 
-        <!-- Header: who, update, sign-out -->
+        <!-- Header: who -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="Administracija" Classes="header" Margin="0,0,0,2"/>
                 <TextBlock Name="EmpWhoText" Text="{Binding WhoText}" Foreground="{DynamicResource AppTextMuted}"/>
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Name="EmpUpdateButton" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="10,8" ToolTip.Tip="Provjeri ažuriranja">
-                    <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="18" Height="18"/>
-                </Button>
-                <Button Name="EmpLogoutButton" Command="{Binding LogoutCommand}" Classes="secondary" Padding="12,8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <materialIcons:MaterialIcon Kind="Logout" Width="18" Height="18"/>
-                        <TextBlock Text="Odjava"/>
-                    </StackPanel>
-                </Button>
             </StackPanel>
         </Grid>
 
@@ -51,13 +42,19 @@
         <!-- Toolbar -->
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Name="EmpAddPersonButton" Command="{Binding AddEmployeeCommand}" IsEnabled="{Binding !IsBusy}" Classes="primary" Padding="14,9">
+                <Button Name="EmpAddPersonButton" Command="{Binding AddEmployeeCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowPeople}" Classes="primary" Padding="14,9">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="AccountPlus" Width="18" Height="18"/>
                         <TextBlock Text="Nova osoba"/>
                     </StackPanel>
                 </Button>
-                <Button Name="EmpImportButton" Command="{Binding ImportEmployeesCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="14,9">
+                <Button Name="EmpAddCodeButton" Command="{Binding AddCodeCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowCodes}" Classes="primary" Padding="14,9">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="PlaylistPlus" Width="18" Height="18"/>
+                        <TextBlock Text="Nova šifra"/>
+                    </StackPanel>
+                </Button>
+                <Button Name="EmpImportButton" Command="{Binding ImportEmployeesCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowPeople}" Classes="secondary" Padding="14,9">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FileUpload" Width="18" Height="18"/>
                         <TextBlock Text="Uvezi listu radnika"/>
@@ -77,18 +74,25 @@
 
             <!-- Table or chart of the hierarchy -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Name="EmpAdminListButton" Command="{Binding Admin.ShowListViewCommand}" Classes.primary="{Binding Admin.ShowList}" Classes.secondary="{Binding Admin.ShowChart}"
+                <Button Name="EmpAdminListButton" Command="{Binding Admin.ShowListViewCommand}" Classes.primary="{Binding Admin.ShowList}" Classes.secondary="{Binding !Admin.ShowList}"
                         Padding="12,9" ToolTip.Tip="Prikaži kao tabelu">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"/>
                         <TextBlock Text="Lista"/>
                     </StackPanel>
                 </Button>
-                <Button Name="EmpAdminChartButton" Command="{Binding Admin.ShowChartViewCommand}" Classes.primary="{Binding Admin.ShowChart}" Classes.secondary="{Binding Admin.ShowList}"
+                <Button Name="EmpAdminChartButton" Command="{Binding Admin.ShowChartViewCommand}" Classes.primary="{Binding Admin.ShowChart}" Classes.secondary="{Binding !Admin.ShowChart}"
                         Padding="12,9" ToolTip.Tip="Prikaži hijerarhiju kao stablo">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FileTree" Width="18" Height="18"/>
                         <TextBlock Text="Hijerarhija"/>
+                    </StackPanel>
+                </Button>
+                <Button Name="EmpAdminCodesButton" Command="{Binding Admin.ShowCodesViewCommand}" Classes.primary="{Binding Admin.ShowCodes}" Classes.secondary="{Binding !Admin.ShowCodes}"
+                        Padding="12,9" ToolTip.Tip="Šifre koje zaposlenici unose u šihtaricu: dodajte novu ili promijenite postojeću">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="FormatListNumbered" Width="18" Height="18"/>
+                        <TextBlock Text="Šifre"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -98,8 +102,9 @@
         <Border Grid.Row="3" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">
             <Grid RowDefinitions="Auto,*">
                 <StackPanel Margin="20,16,20,8" Spacing="8">
-                    <TextBlock Name="EmpAdminSummary" Text="{Binding Admin.SummaryText}" Foreground="{DynamicResource AppTextMuted}"/>
-                    <TextBlock Name="EmpAuditHint" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
+                    <TextBlock Name="EmpAdminSummary" Text="{Binding Admin.SummaryText}" IsVisible="{Binding Admin.ShowPeople}" Foreground="{DynamicResource AppTextMuted}"/>
+                    <TextBlock Name="EmpCodesSummary" Text="{Binding Admin.CodesSummary}" IsVisible="{Binding Admin.ShowCodes}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
+                    <TextBlock Name="EmpAuditHint" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}" IsVisible="{Binding Admin.ShowPeople}"
                                Text="Revizijski dnevnik je zapis o tome ko je i kada šta promijenio (osobe, uloge, predaje i odluke o šihtaricama). Svaki zapis je vezan za prethodni, pa se naknadna izmjena primijeti. Dugme „Provjeri revizijski dnevnik“ to provjerava."/>
                     <TextBox Name="EmpAdminFilter" Text="{Binding Admin.Filter}" Watermark="Traži po imenu, šifri ili korisničkom imenu" MaxWidth="420" HorizontalAlignment="Left"
                              IsVisible="{Binding Admin.ShowList}"/>
@@ -146,6 +151,46 @@
                     </ScrollViewer>
                 </Grid>
 
+                <!-- Codes of the legend: the administrator adds codes and changes them without a new version of the program -->
+                <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding Admin.ShowCodes}">
+                    <Border Margin="20,0,20,0" Padding="0,8" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="70,*,130,190,90,90,56">
+                            <TextBlock Text="Šifra" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="1" Text="Naziv" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="2" Text="Boja" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="3" Text="Unos" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="4" Text="Stanje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="5" Text="Vrsta" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="6" Text="Radnje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                        </Grid>
+                    </Border>
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl Name="EmpCodesList" ItemsSource="{Binding Admin.Codes}" Margin="20,0,20,12">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="em:CodeRow">
+                                    <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,8">
+                                        <Grid ColumnDefinitions="70,*,130,190,90,90,56">
+                                            <TextBlock Text="{Binding Code}" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" Foreground="{DynamicResource AppTextStrong}"/>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="10" Height="10" Fill="{Binding ColourBrush}"/>
+                                                <TextBlock Text="{Binding ColourShort}" Foreground="{DynamicResource AppText}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="3" Text="{Binding UnitShort}" VerticalAlignment="Center" Foreground="{DynamicResource AppText}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="{DynamicResource AppText}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding OriginText}" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
+                                            <Button Grid.Column="6" Classes="icon" Width="32" Height="32" ToolTip.Tip="Uredi šifru" HorizontalAlignment="Right"
+                                                    Command="{Binding $parent[Window].DataContext.EditCodeCommand}" CommandParameter="{Binding}">
+                                                <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+
                 <!-- Chart: the top of the hierarchy, then branches downward -->
                 <ScrollViewer Name="EmpAdminChartScroll" Grid.Row="1" IsVisible="{Binding Admin.ShowChart}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <ItemsControl Name="EmpAdminChart" ItemsSource="{Binding Admin.Chart}" Margin="20,4,20,20" HorizontalAlignment="Center">
@@ -163,5 +208,6 @@
                 </ScrollViewer>
             </Grid>
         </Border>
+    </Grid>
     </Grid>
 </Window>

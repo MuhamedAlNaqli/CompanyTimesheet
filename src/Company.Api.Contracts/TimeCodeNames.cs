@@ -6,7 +6,7 @@ namespace Company.Api.Contracts;
 /// </summary>
 public static class TimeCodeNames
 {
-    private static readonly Dictionary<int, (string Bs, string En)> Names = new()
+    public static IReadOnlyDictionary<int, (string Bs, string En)> Defaults { get; } = new Dictionary<int, (string Bs, string En)>
     {
         [1010] = ("Redovan rad", "Regular work"),
         [1020] = ("Plaćeno odsustvo", "Paid leave"),
@@ -31,6 +31,17 @@ public static class TimeCodeNames
         [2024] = ("Prekovremeni noćni rad vikendom", "Night weekend overtime"),
         [2025] = ("Prekovremeni noćni rad praznikom", "Night holiday overtime")
     };
+
+    private static volatile IReadOnlyDictionary<int, (string Bs, string En)> Names = Defaults;
+
+    /// <summary>Replaces the names with the ones the server holds (the administrator can name new codes). An empty list is ignored.</summary>
+    public static void Configure(IEnumerable<(int Code, string Bs, string En)> names)
+    {
+        var map = names.GroupBy(n => n.Code).ToDictionary(g => g.Key, g => (g.First().Bs, g.First().En));
+        if (map.Count > 0) Names = map;
+    }
+
+    public static void Reset() => Names = Defaults;
 
     public static string Bs(int code) => Names.TryGetValue(code, out var name) ? name.Bs : code.ToString();
 

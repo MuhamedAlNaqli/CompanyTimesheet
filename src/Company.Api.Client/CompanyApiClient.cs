@@ -134,6 +134,14 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default) => GetAsync<AuditVerificationDto>("/api/admin/audit/verify", ct);
 
+    public Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default) => GetAsync<List<CodeDefinitionDto>>("/api/admin/codes", ct);
+
+    public Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default) =>
+        SendAsync<CodeDefinitionDto>(HttpMethod.Post, "/api/admin/codes", request, ct);
+
+    public Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default) =>
+        SendAsync<CodeDefinitionDto>(HttpMethod.Put, $"/api/admin/codes/{code}", request, ct);
+
     // ---- Identity and reference data ------------------------------------------------------------------------------------
 
     public Task<MeDto> GetMeAsync(CancellationToken ct = default) => GetAsync<MeDto>("/api/me", ct);
@@ -141,6 +149,9 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
     public Task<AuthDiagnosticsDto> GetDiagnosticsAsync(CancellationToken ct = default) => GetAsync<AuthDiagnosticsDto>("/api/auth/diagnostics", ct);
 
     public Task<List<TimeCodeDto>> GetTimeCodesAsync(CancellationToken ct = default) => GetAsync<List<TimeCodeDto>>("/api/timecodes", ct);
+
+    public Task SetPreferencesAsync(PreferencesRequest request, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Put, "/api/me/preferences", request, ct);
 
     // ---- My timesheet -----------------------------------------------------------------------------------------------------
 

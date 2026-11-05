@@ -30,6 +30,9 @@ public interface IEmployeeDialogs
     /// <summary>The dialog in which the administrator changes an employee; null when it was cancelled</summary>
     Task<AdminEditResult?> AdminEditAsync(AdminEmployeeViewModel viewModel);
 
+    /// <summary>The dialog in which the administrator adds or changes a code of the legend; null when it was cancelled</summary>
+    Task<Company.Api.Contracts.SaveCodeRequest?> CodeEditAsync(CodeEditViewModel viewModel);
+
     /// <summary>The person chooses a CSV file; its text, or null when they cancelled</summary>
     Task<string?> PickCsvAsync();
 }
@@ -47,6 +50,9 @@ public sealed class WindowEmployeeDialogs : IEmployeeDialogs
 
     public Task<AdminEditResult?> AdminEditAsync(AdminEmployeeViewModel viewModel) =>
         EmployeeDialogs.ShowAsync<AdminEmployeeDialog, AdminEditResult?>(new AdminEmployeeDialog { DataContext = viewModel }, viewModel);
+
+    public Task<Company.Api.Contracts.SaveCodeRequest?> CodeEditAsync(CodeEditViewModel viewModel) =>
+        EmployeeDialogs.ShowAsync<CodeDialog, Company.Api.Contracts.SaveCodeRequest?>(new CodeDialog { DataContext = viewModel }, viewModel);
 
     public async Task<string?> PickCsvAsync()
     {

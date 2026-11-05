@@ -79,7 +79,8 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         _overtimeId = overtime?.Id;
 
         // Changing an overtime record keeps it an overtime record; everything else may become anything
-        Codes = TimeCodes.All.Where(c => overtime == null || c.IsOvertime).Select(c => new CodeOption(c)).ToList();
+        // A code the administrator switched off is no longer offered, except on the entry that already has it
+        Codes = TimeCodes.All.Where(c => (c.Active || c.Code == entry?.Code) && (overtime == null || c.IsOvertime)).Select(c => new CodeOption(c)).ToList();
         CanChangeDate = entry == null;
         Title = overtime != null ? "Izmjena prekovremenog rada" : entry != null ? "Izmjena unosa" : "Novi unos";
 

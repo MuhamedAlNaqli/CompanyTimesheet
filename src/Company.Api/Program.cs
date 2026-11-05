@@ -74,6 +74,8 @@ await using (var scope = app.Services.CreateAsyncScope())
     }
 
     await Bootstrap.RunAsync(db, app.Configuration, app.Logger);
+    // The codes of the legend live in the database, so that the administrator can add codes without a new version
+    await CodeCatalog.SeedAndLoadAsync(db);
     // Only with Demo:Seed (a test on one PC): sample people and months in an otherwise empty database
     if (!migrateOnly) await DemoData.RunAsync(app.Services, app.Configuration, app.Logger);
     if (migrateOnly) return;

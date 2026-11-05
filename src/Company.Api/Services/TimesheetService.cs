@@ -42,6 +42,7 @@ public sealed class TimesheetService
         CheckDate(date, year, month);
 
         if (!TimeCodes.TryGet(request.Code, out var code)) throw new SheetException(400, "unknown-code", $"The code {request.Code} does not exist.");
+        if (!code.Active && !sheet.Entries.Any(e => e.Date == date && e.Code == code.Code)) throw new SheetException(400, "inactive-code", $"The code {request.Code} is no longer in use.");
         if (code.IsOvertime) throw new SheetException(400, "overtime-derived", "Overtime is entered as an interval, not as a code on a day.");
         await CheckEmploymentAsync(employeeCode, year, date);
 

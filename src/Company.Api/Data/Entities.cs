@@ -33,6 +33,12 @@ public class Employee
     /// <summary>For the reminder mails (Features:EmailReminders); optional</summary>
     public string? Email { get; set; }
 
+    /// <summary>"system", "light" or "dark"; null is the default (light). The person chooses it in the program.</summary>
+    public string? ThemeMode { get; set; }
+
+    /// <summary>The colour palette the person chose (see UiPreferences); null is the default</summary>
+    public string? Palette { get; set; }
+
     public List<EmployeeAccount> Accounts { get; set; } = new();
 }
 
@@ -340,4 +346,32 @@ public class SheetOvertime
     public TimeOnly End { get; set; }
 
     public string Description { get; set; } = "";
+}
+
+/// <summary>
+/// A code of the legend. The administrator adds codes here without a new version of the program; the rules of the sheet read the colour
+/// (which decides what the code means for the monthly fund) and the unit (hours or a whole day) from this row.
+/// </summary>
+public class CodeDefinition
+{
+    public int Id { get; set; }
+
+    /// <summary>The number on the sheet, unique</summary>
+    public int Code { get; set; }
+
+    public string NameBs { get; set; } = "";
+
+    public string NameEn { get; set; } = "";
+
+    /// <summary>Green, Blue, Orange or Red (see CodeColour)</summary>
+    public string Colour { get; set; } = "Green";
+
+    /// <summary>Hours or Day (see CodeUnit)</summary>
+    public string Unit { get; set; } = "Hours";
+
+    /// <summary>A switched-off code is no longer offered, but the sheets that used it still read</summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>One of the codes of the legend: rules of the program rely on it, so it can be renamed but not switched off</summary>
+    public bool IsSystem { get; set; }
 }

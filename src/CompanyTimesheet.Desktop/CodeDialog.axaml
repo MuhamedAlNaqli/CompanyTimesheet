@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:em="using:CompanyTimesheet.Desktop"
+        x:Class="CompanyTimesheet.Desktop.CodeDialog"
+        x:DataType="em:CodeEditViewModel"
+        Title="{Binding Title}" Width="560" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterOwner">
+    <ScrollViewer MaxHeight="760">
+        <StackPanel Margin="28,24" Spacing="12">
+            <TextBlock Name="CodeDialogTitle" Text="{Binding Title}" Classes="title"/>
+
+            <TextBlock Text="Šifra (broj od 1000 do 9999)" Classes="label" IsVisible="{Binding IsNew}"/>
+            <TextBox Name="CodeNumber" Classes="form" Text="{Binding CodeText}" Watermark="npr. 1050" IsVisible="{Binding IsNew}"/>
+
+            <TextBlock Text="Naziv" Classes="label"/>
+            <TextBox Name="CodeNameBs" Classes="form" Text="{Binding NameBs}"/>
+
+            <TextBlock Text="Naziv na engleskom (nije obavezan)" Classes="label"/>
+            <TextBox Name="CodeNameEn" Classes="form" Text="{Binding NameEn}"/>
+
+            <TextBlock Text="Boja i značenje u fondu sati" Classes="label"/>
+            <ComboBox Name="CodeColour" Classes="form" ItemsSource="{Binding Colours}" SelectedItem="{Binding Colour}" IsEnabled="{Binding CanChangeMeaning}" HorizontalAlignment="Stretch"/>
+
+            <TextBlock Text="Šta zaposlenik upisuje" Classes="label"/>
+            <ComboBox Name="CodeUnit" Classes="form" ItemsSource="{Binding Units}" SelectedItem="{Binding Unit}" IsEnabled="{Binding CanChangeMeaning}" HorizontalAlignment="Stretch"/>
+
+            <CheckBox Name="CodeActive" IsChecked="{Binding IsActive}" Content="Šifra je aktivna (zaposlenici je mogu birati)" IsEnabled="{Binding CanSwitchOff}"/>
+
+            <TextBlock Name="CodeNote" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+
+            <TextBlock Name="CodeError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Name="CodeCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="Odustani"/></Button>
+                <Button Name="CodeSaveButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="Sačuvaj"/></Button>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

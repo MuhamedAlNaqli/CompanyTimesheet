@@ -26,7 +26,7 @@ public static class AbsenceRanges
         WorkCalendar calendar,
         IReadOnlyCollection<DateOnly>? religiousHolidays = null)
     {
-        if (!TimeCodes.TryGet(code, out var timeCode) || !timeCode.IsAbsence)
+        if (!TimeCodes.TryGet(code, out var timeCode) || !timeCode.IsAbsence || !timeCode.Active)
             throw new ArgumentException($"{code} is not a whole-day absence code.", nameof(code));
         if (to < from) throw new ArgumentException("The range ends before it starts.", nameof(to));
         if (to.DayNumber - from.DayNumber > 366) throw new ArgumentException("A range can span at most a year.", nameof(to));

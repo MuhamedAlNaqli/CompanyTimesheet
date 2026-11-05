@@ -22,7 +22,9 @@ public sealed record MeDto(
     IReadOnlyList<string> ApprovalChain,
     string AuthenticationMode,
     bool IsFinance = false,
-    bool SheetExport = false);
+    bool SheetExport = false,
+    string? ThemeMode = null,
+    string? Palette = null);
 
 public sealed record EmployeeDto(
     string Code,
@@ -91,7 +93,24 @@ public sealed record AccountMatchDto(string Account, string DisplayName, string?
 
 public sealed record HolidayDto(DateOnly Date, string Name);
 
-public sealed record TimeCodeDto(int Code, string NameBs, string NameEn, string Colour, string Unit, bool InMonthlyFund, bool IsOvertime);
+public sealed record TimeCodeDto(int Code, string NameBs, string NameEn, string Colour, string Unit, bool InMonthlyFund, bool IsOvertime, bool IsActive = true);
+
+/// <summary>A code of the legend as the administrator sees it. A system code is one the rules of the program rely on (it can be renamed, not removed).</summary>
+public sealed record CodeDefinitionDto(int Code, string NameBs, string NameEn, string Colour, string Unit, bool IsActive, bool IsSystem, bool InUse);
+
+/// <summary>A new code, or the changes to one. Colour and unit only change while no sheet uses the code.</summary>
+public sealed record SaveCodeRequest(int Code, string NameBs, string NameEn, string Colour, string Unit, bool IsActive);
+
+/// <summary>How the screen of one person looks: the theme and the colour palette. Null leaves the choice as it was.</summary>
+public sealed record PreferencesRequest(string? ThemeMode, string? Palette);
+
+/// <summary>The choices a person has for the look of the program, so that the server and the program agree</summary>
+public static class UiPreferences
+{
+    public static readonly string[] ThemeModes = { "system", "light", "dark" };
+
+    public static readonly string[] Palettes = { "teal", "logosoft", "blue", "graphite" };
+}
 
 public sealed record CalendarDayDto(DateOnly Date, string Weekday, DayKind Type, string? HolidayName);
 

@@ -8,9 +8,11 @@
         Width="1180" Height="760" MinWidth="900" MinHeight="540"
         WindowStartupLocation="CenterScreen">
 
-    <Grid Margin="24,20" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="12">
+    <Grid ColumnDefinitions="Auto,*">
+    <em:SideBar Grid.Column="0"/>
+    <Grid Grid.Column="1" Margin="24,20" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="12">
 
-        <!-- Header: who, month, sign-out -->
+        <!-- Header: who, month -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="Moja evidencija radnog vremena" Classes="header" Margin="0,0,0,2"/>
@@ -41,17 +43,6 @@
                 </Button>
             </StackPanel>
 
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button Name="EmpUpdateButton" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="10,8" ToolTip.Tip="Provjeri ažuriranja">
-                    <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="18" Height="18"/>
-                </Button>
-                <Button Name="EmpLogoutButton" IsVisible="{Binding !NeedsSignIn}" Command="{Binding LogoutCommand}" Classes="secondary" Padding="12,8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <materialIcons:MaterialIcon Kind="Logout" Width="18" Height="18"/>
-                        <TextBlock Text="Odjava"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
         </Grid>
 
         <!-- Own timesheet or timesheets waiting for approval -->
@@ -698,5 +689,6 @@
                 </StackPanel>
             </ScrollViewer>
         </Grid>
+    </Grid>
     </Grid>
 </Window>

@@ -199,6 +199,7 @@ public partial class EmployeeViewModel : ObservableObject
         _logger = logger;
         MonthTitle = EmployeeFormat.Month(Year, Month);
         IsRestoring = tokens.Load() != null;
+        InitAppearance();
     }
 
     // ---- Loading ---------------------------------------------------------------------------------------------------
@@ -236,6 +237,8 @@ public partial class EmployeeViewModel : ObservableObject
                 IsApprover = me.IsApprover;
                 CanExport = me.SheetExport;
                 IsAdmin = me.IsAdmin;
+                ApplyServerAppearance(me.ThemeMode, me.Palette);
+                await LoadTimeCodesAsync();
             }
 
             // An administrator only administers: no timesheet is loaded for them, the administration is all there is

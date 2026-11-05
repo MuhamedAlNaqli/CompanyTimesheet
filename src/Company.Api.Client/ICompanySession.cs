@@ -44,4 +44,11 @@ public interface ICompanyAdminClient
     Task RemoveCredentialsAsync(string code, CancellationToken ct = default);
 
     Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default);
+
+    /// <summary>The codes of the legend, with the ones that were switched off</summary>
+    Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default);
+
+    Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default);
+
+    Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default);
 }

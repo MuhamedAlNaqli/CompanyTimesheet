@@ -23,7 +23,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            RequestedThemeVariant = ThemeVariant.Light;
+            // The look this computer remembered; after sign-in the choice saved on the person's account replaces it
+            ThemeManager.Apply(EmployeePreferences.LoadThemeMode(), EmployeePreferences.LoadPalette());
             _desktop = desktop;
             desktop.MainWindow = CreateFirstWindow();
         }

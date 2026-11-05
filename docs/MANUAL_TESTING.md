@@ -48,6 +48,8 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 - *Uvezi listu radnika*: izaberite `sample-employees.csv` iz foldera servera (Z-001…Z-006 već postoje; vidi se pregled "ažurirano").
 - Pokušaj da Selma dobije za nadređenog Lejlu mora biti odbijen (krug u hijerarhiji). *Provjeri revizijski dnevnik* → "u redu".
 
+- Dugme **Šifre** (uz Listu i Hijerarhiju) pokazuje šifre iz legende: 22 sistemske i one koje je administrator dodao. *Nova šifra*: broj od 1000 do 9999, naziv, boja (zelena, plava ili narandžasta; prekovremeni dolazi s programom) i vrsta unosa (sati ili cijeli dan). Poslije dodavanja se prijavite kao Lejla: nova šifra je u prozoru *Novi unos*, a forma se prilagođava (cijeli dan traži period). Boja i vrsta se ne mogu mijenjati kad je neka šihtarica već upotrijebi; šifra se tada može preimenovati ili isključiti (stari unosi ostaju, novi se ne mogu upisati). Sistemske šifre se samo preimenuju.
+
 ### F. Prijava i sigurnost
 - Pogrešna lozinka: "Pogrešno korisničko ime ili lozinka." Pet zaredom zaključava račun 15 minuta.
 - *Odjava* ostavlja prazan prijavni ekran. Uz "Zapamti me" sljedeće pokretanje prijavljuje samo.
@@ -60,7 +62,9 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
   Zadatak: *Task Scheduler → CompanyTimesheet → Reminder*.
 
 ### H. Ažuriranja
-- Dugme s ikonom oblaka u zaglavlju: "Imate najnoviju verziju (…)" ili prozor za nadogradnju kad postoji novije izdanje.
+- Bočna traka (lijevo, na svim prozorima): *Provjeri ažuriranja*, *Odjava* i *Izgled*. Dugme s tri crte skuplja traku u ikone, a izbor se pamti.
+- *Izgled*: svijetla, tamna ili tema Windowsa, i paleta (Zelena, Logosoft crveno-siva, Plava, Grafit). Izbor je po osobi i čuva se na serveru: odjavite se, prijavite se na drugom računaru i izgled je isti. Prijavni prozor koristi ono što je ovaj računar zadnje pamtio.
+- Provjera ažuriranja: "Imate najnoviju verziju (…)" ili prozor za nadogradnju kad postoji novije izdanje.
 
 ## 3. Šta prijaviti
 

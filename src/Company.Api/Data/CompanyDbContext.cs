@@ -42,6 +42,8 @@ public class CompanyDbContext : DbContext
 
     public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
 
+    public DbSet<CodeDefinition> Codes => Set<CodeDefinition>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Employee>(e =>
@@ -53,7 +55,19 @@ public class CompanyDbContext : DbContext
             e.Property(x => x.SupervisorCode).HasMaxLength(10);
             e.Property(x => x.DesignatedApproverCode).HasMaxLength(10);
             e.Property(x => x.Email).HasMaxLength(200);
+            e.Property(x => x.ThemeMode).HasMaxLength(10);
+            e.Property(x => x.Palette).HasMaxLength(20);
             e.HasMany(x => x.Accounts).WithOne().HasForeignKey(a => a.EmployeeCode).HasPrincipalKey(x => x.Code).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CodeDefinition>(e =>
+        {
+            e.ToTable("code_definitions");
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.NameBs).HasMaxLength(150).IsRequired();
+            e.Property(x => x.NameEn).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Colour).HasMaxLength(10).IsRequired();
+            e.Property(x => x.Unit).HasMaxLength(10).IsRequired();
         });
 
         modelBuilder.Entity<EmployeeAccount>(e =>
