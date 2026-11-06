@@ -27,6 +27,7 @@ public class ApiFactory : WebApplicationFactory<Program>
             ["Features:WindowsLogin"] = "true", // Windows and Entra sign-in are tested; the default of the product is off
             ["Features:SheetExport"] = "true", // the file tests; the tests of the switched-off product say "false"
             ["Features:FinanceAndLegal"] = "true", // the finance and legal tests; the tests of the switched-off product say "false"
+            ["Holidays:SeedFixed"] = "false", // the holiday tests count what they add; the seeding has tests of its own
             ["Bootstrap:AdminCode"] = "Z-000",
             ["Bootstrap:AdminAccounts:0"] = @"dev\admin"
         };

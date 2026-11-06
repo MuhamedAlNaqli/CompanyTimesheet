@@ -39,9 +39,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <TextBlock Text="{em:Tr 'Vjerski praznici (jedan u redu: datum i naziv, npr. 06.03.2027. Ramazanski bajram)'}" Classes="label" IsVisible="{Binding IsExisting}"/>
-            <TextBox Name="AdminReligious" Text="{Binding ReligiousText}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84" MaxHeight="140" IsVisible="{Binding IsExisting}"/>
-
             <Border Height="1" Background="{DynamicResource AppBorder}" Margin="0,6"/>
             <TextBlock Text="{em:Tr 'Prijava'}" FontWeight="SemiBold"/>
             <TextBlock Text="{em:Tr 'Korisničko ime i lozinka kojima se osoba prijavljuje. Prvu lozinku osoba mijenja pri prvoj prijavi.'}" TextWrapping="Wrap"

@@ -840,18 +840,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (row == null) return;
 
-        // The religious holidays are read for the dialog; a failure to read them must not stop the person from editing the rest
-        IReadOnlyList<HolidayDto>? religious = null;
-        try
-        {
-            religious = await _admin.GetReligiousHolidaysAsync(row.Code);
-        }
-        catch (ApiException ex)
-        {
-            _logger.LogWarning(ex, "The religious holidays of {Code} could not be read", row.Code);
-        }
-
-        var result = await _dialogs.AdminEditAsync(new AdminEmployeeViewModel(row, Admin.Employees, religious));
+        var result = await _dialogs.AdminEditAsync(new AdminEmployeeViewModel(row, Admin.Employees));
         if (result == null) return;
 
         await RunAdminAsync(async () =>
@@ -865,7 +854,6 @@ public partial class EmployeeViewModel : ObservableObject
             {
                 await _admin.UpdateEmployeeAsync(row.Code, result.Update);
                 if (result.SetCredentials != null) await _admin.SetCredentialsAsync(row.Code, result.SetCredentials);
-                if (result.ReligiousHolidays != null) await _admin.SetReligiousHolidaysAsync(row.Code, result.ReligiousHolidays);
                 InfoText = Loc.F("Sačuvano: {0}.", row.Name);
             }
 

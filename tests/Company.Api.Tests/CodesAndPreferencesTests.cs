@@ -244,4 +244,61 @@ public class CodesAndPreferencesTests
 
         Assert.AreEqual(HttpStatusCode.Forbidden, (await factory.As(@"corpmra").GetAsync("/api/admin/overview")).StatusCode);
     }
+
+    [TestMethod]
+    public async Task TheFixedStateHolidays_AreWrittenForThisAndNextYear_AndTheAdministratorsChangesAreKept()
+    {
+        using var factory = new ApiFactory(new Dictionary<string, string?> { ["Holidays:SeedFixed"] = "true" });
+        var year = DateTime.Today.Year;
+
+        var thisYear = await factory.Admin.GetFromJsonAsync<List<HolidayDto>>($"/api/admin/holidays/{year}");
+        var nextYear = await factory.Admin.GetFromJsonAsync<List<HolidayDto>>($"/api/admin/holidays/{year + 1}");
+        Assert.AreEqual(6, thisYear!.Count);
+        Assert.AreEqual(6, nextYear!.Count);
+        CollectionAssert.AreEqual(new[] { new DateOnly(year, 1, 1), new DateOnly(year, 1, 2), new DateOnly(year, 3, 1), new DateOnly(year, 5, 1), new DateOnly(year, 5, 2), new DateOnly(year, 11, 25) },
+            thisYear.Select(h => h.Date).ToArray());
+        Assert.AreEqual("Praznik rada", thisYear.Single(h => h.Date.Month == 5 && h.Date.Day == 1).Name);
+
+        // The administrator removes one and renames another: a later look at the overview does not write them again
+        await factory.Admin.DeleteAsync($"/api/admin/holidays/{year}-03-01");
+        await factory.Admin.PostAsJsonAsync("/api/admin/holidays", new HolidayDto(new DateOnly(year, 11, 25), "Dan državnosti"));
+        var overview = await factory.Admin.GetFromJsonAsync<AdminOverviewDto>("/api/admin/overview");
+        Assert.AreEqual(5, overview!.Holidays.ThisYear);
+        var after = await factory.Admin.GetFromJsonAsync<List<HolidayDto>>($"/api/admin/holidays/{year}");
+        Assert.IsFalse(after!.Any(h => h.Date == new DateOnly(year, 3, 1)));
+        Assert.AreEqual("Dan državnosti", after.Single(h => h.Date.Month == 11).Name);
+
+        var events = await factory.Admin.GetFromJsonAsync<List<AuditEventDto>>("/api/admin/audit?take=50");
+        Assert.AreEqual(2, events!.Count(e => e.Action == "HolidaysSeeded"), "this year and the next one, written by the system");
+        Assert.AreEqual("system", events.First(e => e.Action == "HolidaysSeeded").Actor);
+    }
+
+    [TestMethod]
+    public async Task AYearThatTheAdministratorFilledIn_IsNotSeeded_AndTheSeedingCanBeSwitchedOff()
+    {
+        using var off = new ApiFactory();
+        Assert.AreEqual(0, (await off.Admin.GetFromJsonAsync<List<HolidayDto>>($"/api/admin/holidays/{DateTime.Today.Year}"))!.Count, "switched off: nothing is written");
+
+        using var on = new ApiFactory(new Dictionary<string, string?> { ["Holidays:SeedFixed"] = "true" });
+        var next = DateTime.Today.Year + 1;
+        // Written by the system at start; the administrator's own list for another year is not touched
+        var far = await on.Admin.GetFromJsonAsync<List<HolidayDto>>($"/api/admin/holidays/{next + 5}");
+        Assert.AreEqual(0, far!.Count, "only this year and the next one are written");
+    }
+
+    [TestMethod]
+    public async Task SeveralEventsInOneSave_KeepTheAuditChainIntact()
+    {
+        // Seeding writes two events in one save, and the import of a list writes one for every person and one for the import
+        using var factory = new ApiFactory(new Dictionary<string, string?> { ["Holidays:SeedFixed"] = "true" });
+        await factory.ImportAsync(ApiFactory.SmallList);
+        await factory.Admin.PostAsJsonAsync("/api/admin/holidays", new HolidayDto(new DateOnly(DateTime.Today.Year, 12, 31), "Test"));
+
+        var verification = await factory.Admin.GetFromJsonAsync<AuditVerificationDto>("/api/admin/audit/verify");
+        Assert.IsTrue(verification!.IsIntact, verification.Problem);
+        Assert.IsTrue(verification.Checked >= 8, "the events of the seeding, the import and the holiday");
+
+        var events = (await factory.Admin.GetFromJsonAsync<List<AuditEventDto>>("/api/admin/audit?take=100"))!.OrderBy(e => e.Id).ToList();
+        CollectionAssert.AreEqual(new[] { "AdminCreated", "HolidaysSeeded", "HolidaysSeeded" }, events.Take(3).Select(e => e.Action).ToArray());
+    }
 }

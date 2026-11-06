@@ -245,8 +245,38 @@ public class CompanyDbContext : DbContext
         AuditLock.Wait();
         try
         {
-            AuditChain.Link(added, AuditEvents.AsNoTracking().OrderByDescending(e => e.Id).Select(e => e.Hash).FirstOrDefault());
-            return base.SaveChanges(acceptAllChangesOnSuccess);
+            var last = AuditEvents.AsNoTracking().OrderByDescending(e => e.Id).Select(e => e.Hash).FirstOrDefault();
+            if (added.Count == 1)
+            {
+                AuditChain.Link(added, last);
+                return base.SaveChanges(acceptAllChangesOnSuccess);
+            }
+
+            // Several events in one save: the database may give them their numbers in another order than the one they were chained in, which
+            // would break the chain. So they are written one at a time, in the order they are chained, all in one transaction.
+            var own = Database.CurrentTransaction == null ? Database.BeginTransaction() : null;
+            try
+            {
+                foreach (var e in added.Skip(1)) Entry(e).State = EntityState.Detached;
+
+                AuditChain.Link(added.Take(1).ToList(), last);
+                var saved = base.SaveChanges(acceptAllChangesOnSuccess);
+                last = added[0].Hash;
+                foreach (var e in added.Skip(1))
+                {
+                    Entry(e).State = EntityState.Added;
+                    AuditChain.Link(new List<AuditEvent> { e }, last);
+                    saved += base.SaveChanges(acceptAllChangesOnSuccess);
+                    last = e.Hash;
+                }
+
+                own?.Commit();
+                return saved;
+            }
+            finally
+            {
+                own?.Dispose();
+            }
         }
         finally
         {
@@ -266,8 +296,36 @@ public class CompanyDbContext : DbContext
         try
         {
             var last = await AuditEvents.AsNoTracking().OrderByDescending(e => e.Id).Select(e => e.Hash).FirstOrDefaultAsync(cancellationToken);
-            AuditChain.Link(added, last);
-            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            if (added.Count == 1)
+            {
+                AuditChain.Link(added, last);
+                return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            }
+
+            // See SaveChanges: several events are written one at a time, in the order they are chained, in one transaction
+            var own = Database.CurrentTransaction == null ? await Database.BeginTransactionAsync(cancellationToken) : null;
+            try
+            {
+                foreach (var e in added.Skip(1)) Entry(e).State = EntityState.Detached;
+
+                AuditChain.Link(added.Take(1).ToList(), last);
+                var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                last = added[0].Hash;
+                foreach (var e in added.Skip(1))
+                {
+                    Entry(e).State = EntityState.Added;
+                    AuditChain.Link(new List<AuditEvent> { e }, last);
+                    saved += await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                    last = e.Hash;
+                }
+
+                if (own != null) await own.CommitAsync(cancellationToken);
+                return saved;
+            }
+            finally
+            {
+                if (own != null) await own.DisposeAsync();
+            }
         }
         finally
         {

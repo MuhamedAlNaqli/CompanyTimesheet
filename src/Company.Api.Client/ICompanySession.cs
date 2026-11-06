@@ -53,11 +53,6 @@ public interface ICompanyAdminClient
 
     Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default);
 
-    /// <summary>The religious holidays of one person (they differ from person to person)</summary>
-    Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default);
-
-    /// <summary>Replaces the religious holidays of one person with the given list</summary>
-    Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default);
 
     /// <summary>Adds a state holiday, or renames the one on that date</summary>
     Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default);

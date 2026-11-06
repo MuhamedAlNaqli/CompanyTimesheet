@@ -495,7 +495,6 @@ public static class Translations
         ["Tekst je predug."] = "The text is too long.",
         ["Server nije mogao završiti zahtjev. Pokušajte ponovo; ako se ponavlja, javite administratoru."] = "The server could not complete the request. Try again; if it repeats, tell the administrator.",
         ["Server firme nije dostupan. Provjerite mrežnu vezu (VPN)."] = "The company server is not available. Check the network connection (VPN).",
-        ["Vjerski praznici (jedan u redu: datum i naziv, npr. 06.03.2027. Ramazanski bajram)"] = "Religious holidays (one to a line: a date and a name, e.g. 06.03.2027. Ramadan Bayram)",
-        ["Red „{0}“ ne počinje datumom. Upišite datum kao 06.03.2027., pa naziv."] = "The line ‘{0}’ does not start with a date. Write the date like 06.03.2027., then the name.",
+        ["Upisani fiksni državni praznici"] = "Fixed state holidays entered",
     };
 }

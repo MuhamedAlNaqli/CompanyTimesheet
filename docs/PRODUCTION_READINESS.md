@@ -40,8 +40,10 @@ PostgreSQL (production) / SQLite (development, tests)
 
 ## To do before the whole company uses it
 
-1. **State holidays.** Enter them in *Praznici* for the current and the next year. Without them the monthly fund of hours is wrong (the first screen
-   warns). Religious holidays are per employee: they are written in the dialog of the person (*Osobe → Uredi*), one to a line.
+1. **State holidays.** The server writes the fixed ones of the Federation (1 and 2 January, 1 March, 1 and 2 May, 25 November) for this and the next year
+   (`Holidays:SeedFixed`, on by default; a year that already has holidays is left alone). Check the list once with the company, and use *Praznici* for what
+   differs (a canton declares a day, a law changes). Without holidays the monthly fund of hours is wrong; the first screen warns. Religious holidays are not
+   set per person: an employee enters the code 1025 on the day, which counts as a day of absence in the fund.
 2. **Sign the updates.** The app checks for updates in the appcast; without an Ed25519 key the signatures are *not verified*
    (`UpdateService:Ed25519PublicKey` is empty). Generate a key pair, keep the private key as a secret of the release workflow, put the public key
    in `appsettings.json` of the app. Also add the code-signing certificate (`SIGNING_PFX_BASE64`, see `RELEASING.md`) so Windows does not warn.

@@ -14,17 +14,22 @@ public sealed class AdminOverviewService
 {
     private readonly CompanyDbContext _db;
     private readonly TimeProvider _time;
+    private readonly IConfiguration _configuration;
 
-    public AdminOverviewService(CompanyDbContext db, TimeProvider time)
+    public AdminOverviewService(CompanyDbContext db, TimeProvider time, IConfiguration configuration)
     {
         _db = db;
         _time = time;
+        _configuration = configuration;
     }
 
     public async Task<AdminOverviewDto> BuildAsync()
     {
         var utcNow = _time.GetUtcNow().UtcDateTime;
         var today = DateOnly.FromDateTime(_time.GetLocalNow().DateTime);
+
+        // A server that runs for years reaches a new year without a restart: the holidays of the year after are written here too
+        if (_configuration.GetValue("Holidays:SeedFixed", false)) await HolidayCatalog.SeedAsync(_db, today.Year, today.Year + 1);
 
         var employees = await _db.Employees.AsNoTracking().Select(e => new { e.Code, e.IsActive, e.IsAdmin, e.SupervisorCode, e.DesignatedApproverCode, e.ActiveFrom, e.ActiveTo }).ToListAsync();
         var credentials = await _db.Credentials.AsNoTracking().Select(c => new { c.EmployeeCode, c.LockedUntilUtc }).ToListAsync();

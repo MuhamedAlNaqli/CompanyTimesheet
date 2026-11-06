@@ -82,6 +82,7 @@ public static class AuditActions
         ["HolidayAdded"] = "Dodan državni praznik",
         ["HolidayRenamed"] = "Preimenovan državni praznik",
         ["HolidayRemoved"] = "Uklonjen državni praznik",
+        ["HolidaysSeeded"] = "Upisani fiksni državni praznici",
         ["ReligiousHolidaysSet"] = "Postavljeni vjerski praznici",
         ["CodeAdded"] = "Dodana šifra",
         ["CodeChanged"] = "Izmijenjena šifra",

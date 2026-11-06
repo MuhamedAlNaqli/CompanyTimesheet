@@ -258,20 +258,16 @@ public sealed record PersonOption(string Code, string Label)
 /// What the dialog of an employee asks for: the changes to the employee, and what to do with the user name. For a new person Create is
 /// set (and Update is empty): the person is added first, then the user name is given to the code the server chose.
 /// </summary>
-public sealed record AdminEditResult(UpdateEmployeeRequest Update, SetCredentialsRequest? SetCredentials, bool RemoveCredentials, CreateEmployeeRequest? Create = null,
-    IReadOnlyList<HolidayDto>? ReligiousHolidays = null);
+public sealed record AdminEditResult(UpdateEmployeeRequest Update, SetCredentialsRequest? SetCredentials, bool RemoveCredentials, CreateEmployeeRequest? Create = null);
 
 /// <summary>The dialog in which the administrator changes an employee, or adds a new one (no row)</summary>
 public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogResult<AdminEditResult?>
 {
     private readonly AdminRow? _row;
-    private readonly IReadOnlyList<HolidayDto>? _religiousBefore;
 
-    public AdminEmployeeViewModel(AdminRow? row, IReadOnlyList<EmployeeDto> everybody, IReadOnlyList<HolidayDto>? religious = null)
+    public AdminEmployeeViewModel(AdminRow? row, IReadOnlyList<EmployeeDto> everybody)
     {
         _row = row;
-        _religiousBefore = religious;
-        _religiousText = ReligiousHolidayText.Format(religious);
         var employee = row?.Employee ?? new EmployeeDto("", "", true, null, false, null, false, null, null, Array.Empty<string>());
         IsNew = row == null;
         Title = IsNew ? Loc.T("Nova osoba") : $"{employee.Name} · {employee.Code}";
@@ -317,9 +313,6 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
     [ObservableProperty] private bool _mustChange = true;
     [ObservableProperty] private string _error = "";
 
-    /// <summary>The religious holidays of the person, one to a line: a date and a name (they differ from person to person)</summary>
-    [ObservableProperty] private string _religiousText = "";
-
     public AdminEditResult? Result { get; private set; }
 
     public event Action? RequestClose;
@@ -361,15 +354,7 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
         SetCredentialsRequest? set = null;
         if (hasName && hasPassword) set = new SetCredentialsRequest(Username.Trim(), NewPassword, MustChange);
 
-        // The holidays are sent only when the person changed the text
-        IReadOnlyList<HolidayDto>? religious = null;
-        if (ReligiousText.Trim() != ReligiousHolidayText.Format(_religiousBefore).Trim())
-        {
-            if (!ReligiousHolidayText.TryParse(ReligiousText, out var parsed, out var problem)) { Error = problem; return; }
-            religious = parsed;
-        }
-
-        Result = new AdminEditResult(update, set, RemoveCredentials: false, ReligiousHolidays: religious);
+        Result = new AdminEditResult(update, set, RemoveCredentials: false);
         RequestClose?.Invoke();
     }
 

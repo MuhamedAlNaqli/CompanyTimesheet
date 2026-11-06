@@ -142,12 +142,6 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default) => GetAsync<List<HolidayDto>>($"/api/admin/holidays/{year}", ct);
 
-    public Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default) =>
-        GetAsync<List<HolidayDto>>($"/api/admin/employees/{Uri.EscapeDataString(code)}/religious-holidays", ct);
-
-    public Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default) =>
-        SendAsync<object>(HttpMethod.Put, $"/api/admin/employees/{Uri.EscapeDataString(code)}/religious-holidays", holidays, ct);
-
     public Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default) =>
         SendAsync<HolidayDto>(HttpMethod.Post, "/api/admin/holidays", holiday, ct);
 

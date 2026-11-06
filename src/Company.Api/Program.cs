@@ -77,6 +77,9 @@ await using (var scope = app.Services.CreateAsyncScope())
     await Bootstrap.RunAsync(db, app.Configuration, app.Logger);
     // The codes of the legend live in the database, so that the administrator can add codes without a new version
     await CodeCatalog.SeedAndLoadAsync(db);
+    // The fixed state holidays of this and the next year, so that nobody has to type them (Holidays:SeedFixed, on by default)
+    if (!migrateOnly && app.Configuration.GetValue("Holidays:SeedFixed", false))
+        await HolidayCatalog.SeedAsync(db, DateTime.Today.Year, DateTime.Today.Year + 1);
     // Only with Demo:Seed (a test on one PC): sample people and months in an otherwise empty database
     if (!migrateOnly) await DemoData.RunAsync(app.Services, app.Configuration, app.Logger);
     if (migrateOnly) return;

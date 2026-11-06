@@ -212,15 +212,6 @@ public class EmployeeViewModelTests
             new OverviewMonthDto(2026, 9, 0, 0, 0, 0, 0, 0), new OverviewMonthDto(2026, 8, 0, 0, 0, 0, 0, 0), new OverviewHolidaysDto(2026, 10, 10),
             new OverviewAuditDto(0, null, new List<AuditEventDto>()));
         public List<HolidayDto> HolidayList { get; set; } = new();
-        public Dictionary<string, List<HolidayDto>> Religious { get; } = new();
-        public Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default) =>
-            Task.FromResult(Religious.TryGetValue(code, out var list) ? list.ToList() : new List<HolidayDto>());
-        public Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default)
-        {
-            Calls.Add($"religious {code} {string.Join(",", holidays.Select(h => h.Date.ToString("yyyy-MM-dd") + " " + h.Name))}");
-            Religious[code] = holidays.ToList();
-            return Task.CompletedTask;
-        }
         public Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default) => Task.FromResult(Overview);
         public Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default) => Task.FromResult(HolidayList.Where(h => h.Date.Year == year).ToList());
         public Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default)
@@ -1837,55 +1828,5 @@ public class EmployeeViewModelTests
 
         vm.ToggleSidebarCommand.Execute(null);
         Assert.AreEqual(60, vm.SidebarWidth, "folded by the person");
-    }
-
-    [TestMethod]
-    public void TheReligiousHolidays_AreWrittenOneToALine_AndReadBack()
-    {
-        var list = new[] { new HolidayDto(new DateOnly(2027, 3, 6), "Ramazanski bajram"), new HolidayDto(new DateOnly(2027, 1, 7), "") };
-        var text = ReligiousHolidayText.Format(list);
-        Assert.AreEqual("07.01.2027.\n06.03.2027. Ramazanski bajram", text);
-
-        Assert.IsTrue(ReligiousHolidayText.TryParse("06.03.2027. Ramazanski bajram\n7.1.2027\n2027-05-01 Praznik\n\n06.03.2027. duplo", out var parsed, out _));
-        Assert.AreEqual(3, parsed.Count, "an empty line is skipped and a date written twice counts once");
-        Assert.AreEqual("Ramazanski bajram", parsed[0].Name);
-        Assert.AreEqual(new DateOnly(2027, 1, 7), parsed[1].Date);
-
-        Assert.IsFalse(ReligiousHolidayText.TryParse("Bajram 2027", out _, out var problem));
-        StringAssert.Contains(problem, "Bajram 2027");
-        Assert.IsTrue(ReligiousHolidayText.TryParse("", out var none, out _));
-        Assert.AreEqual(0, none.Count);
-    }
-
-    [TestMethod]
-    public async Task TheReligiousHolidaysOfAPerson_AreShownInTheDialog_AndSavedOnlyWhenChanged()
-    {
-        var (vm, client, dialogs, _, _) = CreateWith(out _, out _, out var admin);
-        client.IsAdmin = true;
-        admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
-        admin.Religious["Z-001"] = new() { new HolidayDto(new DateOnly(2027, 3, 6), "Ramazanski bajram") };
-        await vm.LoadCommand.ExecuteAsync(null);
-        await vm.OpenAdminSectionCommand.ExecuteAsync("people");
-
-        // Unchanged: the dialog gives back no holidays, so nothing is sent
-        var dialog = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, admin.Religious["Z-001"]);
-        Assert.AreEqual("06.03.2027. Ramazanski bajram", dialog.ReligiousText);
-        dialog.SaveCommand.Execute(null);
-        Assert.IsNull(dialog.Result!.ReligiousHolidays);
-
-        // Changed: the new list goes to the server with the rest of the changes
-        var changed = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, admin.Religious["Z-001"]) { ReligiousText = "06.03.2027. Ramazanski bajram\n16.05.2027. Kurban-bajram" };
-        changed.SaveCommand.Execute(null);
-        dialogs.AdminEdit = changed.Result;
-        admin.Calls.Clear();
-        await vm.EditEmployeeCommand.ExecuteAsync(vm.Admin.Rows[0]);
-
-        Assert.IsTrue(admin.Calls.Any(c => c.StartsWith("religious Z-001") && c.Contains("2027-05-16 Kurban-bajram")));
-
-        // A line that is not a date keeps the dialog open
-        var bad = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, null) { ReligiousText = "nije datum" };
-        bad.SaveCommand.Execute(null);
-        Assert.IsNull(bad.Result);
-        Assert.AreNotEqual("", bad.Error);
     }
 }
