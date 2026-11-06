@@ -76,7 +76,7 @@ public partial class EmployeeViewModel
 
     /// <summary>The side bar shows the names of its buttons; folded, only the icons</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SidebarWidth))]
+    [NotifyPropertyChangedFor(nameof(SidebarWidth), nameof(SidebarShowsText))]
     private bool _sidebarExpanded = EmployeePreferences.LoadSidebarExpanded();
 
     /// <summary>Who is signed in, shown at the bottom of the side bar</summary>
@@ -96,7 +96,19 @@ public partial class EmployeeViewModel
         }
     }
 
-    public double SidebarWidth => SidebarExpanded ? 224 : 60;
+    /// <summary>The window is narrow: the side bar shows only its icons, whatever the person chose, so the work area keeps its room</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SidebarWidth), nameof(SidebarShowsText))]
+    private bool _isCompact;
+
+    /// <summary>Below this width of the window (in device-independent pixels) the side bar folds by itself</summary>
+    public const double CompactBelow = 1200;
+
+    public void SetWindowWidth(double width) => IsCompact = width < CompactBelow;
+
+    public bool SidebarShowsText => SidebarExpanded && !IsCompact;
+
+    public double SidebarWidth => SidebarShowsText ? 224 : 60;
 
     public bool IsModeSystem => ThemeMode == "system";
 
@@ -180,6 +192,7 @@ public partial class EmployeeViewModel
         OnPropertyChanged(nameof(CurrentPaletteLabel));
         OnPropertyChanged(nameof(CurrentLanguageName));
         Sheet.LanguageChanged();
+        Admin.LanguageChanged();
         if (IsConnected && !IsBusy) _ = (InAdmin ? ShowAdminCommand.ExecuteAsync(null) : LoadCommand.ExecuteAsync(null));
     }
 

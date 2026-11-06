@@ -404,6 +404,26 @@
         <Setter Property="BorderThickness" Value="2"/>
     </Style>
 
+    <!-- The first screen of the administrator: figures and what needs a look -->
+    <Style Selector="Border.stat">
+        <Setter Property="Background" Value="{DynamicResource AppSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="16,14"/>
+    </Style>
+    <Style Selector="Border.stat.warn">
+        <Setter Property="Background" Value="{DynamicResource AppWarningSoft}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppWarningBorder}"/>
+    </Style>
+    <Style Selector="Border.stat-panel">
+        <Setter Property="Background" Value="{DynamicResource AppSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="18,16"/>
+    </Style>
+
     <!-- Week view -->
     <Style Selector="Border.day-column">
         <Setter Property="Background" Value="{DynamicResource AppSurface}"/>

@@ -116,4 +116,29 @@ public class LocalizationTests
         StringAssert.Contains(script, "Company''s", "an apostrophe in the path is escaped");
         Assert.IsTrue(script.TrimEnd().EndsWith("Start-Process -FilePath $exe"));
     }
+
+    [TestMethod]
+    public void EveryRefusalOfTheServer_IsExplainedInTheLanguageOfTheInterface()
+    {
+        var codes = new[]
+        {
+            "changed", "wrong-status", "self-approval", "no-chain", "message-required", "outside-month", "outside-employment", "invalid-hours", "invalid-interval",
+            "invalid-absence", "invalid-month", "overtime-derived", "unknown-code", "inactive-code", "revision-too-new", "revision-unreadable", "no-approved-sheets",
+            "no-credentials", "password-change-required", "forbidden", "forbidden-origin", "missing-header", "not-found", "too-long", "server-error"
+        };
+
+        foreach (var code in codes)
+        {
+            var english = new Company.Api.Client.ApiException(System.Net.HttpStatusCode.Conflict, code, "THE ENGLISH SENTENCE OF THE SERVER");
+            Loc.Initialize("bs");
+            var bosnian = ApiMessages.Describe(english);
+            Assert.AreNotEqual("THE ENGLISH SENTENCE OF THE SERVER", bosnian, $"the code {code} has no sentence for the screen");
+
+            Loc.Initialize("en");
+            Assert.AreNotEqual(bosnian, ApiMessages.Describe(english), $"the code {code} has no English wording");
+        }
+
+        var unknown = new Company.Api.Client.ApiException(System.Net.HttpStatusCode.BadRequest, "something-new", "A new refusal");
+        Assert.AreEqual("A new refusal", ApiMessages.Describe(unknown), "a code nobody described shows the sentence of the server");
+    }
 }

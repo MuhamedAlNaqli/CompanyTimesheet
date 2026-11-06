@@ -15,7 +15,7 @@
         <!-- Header: who, month -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{em:Tr 'Moja evidencija radnog vremena'}" Classes="header" Margin="0,0,0,2"/>
+                <TextBlock Text="{em:Tr 'Moja evidencija radnog vremena'}" Classes="header" Margin="0,0,0,2" TextTrimming="CharacterEllipsis"/>
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <Border Background="{DynamicResource AppBadgeBg}" CornerRadius="5" Padding="8,2" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <TextBlock Name="EmpStatusText" Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource AppBadgeText}"/>

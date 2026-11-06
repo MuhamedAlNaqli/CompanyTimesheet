@@ -18,6 +18,9 @@ public static class AdminEndpoints
     {
         var admin = app.MapGroup("/api/admin").RequireAuthorization(Identities.AdminPolicy);
 
+        // What the administrator sees first: figures, and what needs attention
+        admin.MapGet("/overview", async (AdminOverviewService overview) => Results.Ok(await overview.BuildAsync()));
+
         // ---- Employees ---------------------------------------------------------------------------------------------
 
         admin.MapGet("/employees", async (CompanyDbContext db) =>

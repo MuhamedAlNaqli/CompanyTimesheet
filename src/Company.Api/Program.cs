@@ -45,6 +45,7 @@ builder.Services.AddScoped<PrintService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<CredentialService>();
 builder.Services.AddScoped<DeputyService>();
+builder.Services.AddScoped<AdminOverviewService>();
 
 // Reminder mails: built, switched off until Features:EmailReminders is true (and Smtp is set)
 builder.Services.TryAddSingleton<IMailSender, SmtpMailSender>();

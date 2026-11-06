@@ -117,45 +117,24 @@ public sealed partial class AdminViewModel : ObservableObject
     /// <summary>The top of the hierarchy: everybody who reports to nobody, each with the people below as boxes</summary>
     public ObservableCollection<OrgNode> Chart { get; } = new();
 
-    /// <summary>The hierarchy as a tree of boxes instead of the table</summary>
+    /// <summary>The hierarchy as a tree of boxes instead of the table (inside the section of the people)</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowList))]
-    private bool _showChart;
+    [NotifyPropertyChangedFor(nameof(ShowList), nameof(ShowChart))]
+    private bool _chartMode;
 
-    /// <summary>The codes of the legend instead of the people</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowList), nameof(ShowPeople))]
-    private bool _showCodes;
+    public bool ShowList => ShowPeople && !ChartMode;
 
-    public bool ShowList => !ShowChart && !ShowCodes;
-
-    /// <summary>The people (table or chart), not the codes</summary>
-    public bool ShowPeople => !ShowCodes;
+    public bool ShowChart => ShowPeople && ChartMode;
 
     public ObservableCollection<CodeRow> Codes { get; } = new();
 
     [ObservableProperty] private string _codesSummary = "";
 
     [RelayCommand]
-    private void ShowListView()
-    {
-        ShowCodes = false;
-        ShowChart = false;
-    }
+    private void ShowListView() => ChartMode = false;
 
     [RelayCommand]
-    private void ShowChartView()
-    {
-        ShowCodes = false;
-        ShowChart = true;
-    }
-
-    [RelayCommand]
-    private void ShowCodesView()
-    {
-        ShowChart = false;
-        ShowCodes = true;
-    }
+    private void ShowChartView() => ChartMode = true;
 
     public IReadOnlyList<EmployeeDto> Employees { get; private set; } = Array.Empty<EmployeeDto>();
 
@@ -194,6 +173,8 @@ public sealed partial class AdminViewModel : ObservableObject
         Codes.Clear();
         foreach (var code in codes.OrderBy(c => c.Code)) Codes.Add(new CodeRow(code));
         CodesSummary = Loc.F("Šifara: {0}, isključenih: {1}. Nova šifra odmah postaje dostupna svim zaposlenicima, bez nove verzije programa.", Codes.Count, Codes.Count(c => !c.IsActive));
+
+        await LoadExtrasAsync(client);
     }
 
     /// <summary>
@@ -263,7 +244,7 @@ public sealed partial class AdminViewModel : ObservableObject
         "code-in-use" => Loc.T("Šihtarice već koriste tu šifru, pa joj se boja i vrsta unosa ne mogu mijenjati. Isključite je i dodajte novu."),
         "overtime-code" => Loc.T("Šifre za prekovremeni rad dolaze s programom: prekovremeni se računa iz intervala."),
         "invalid-kind" => Loc.T("Boja ili vrsta unosa nisu ispravni."),
-        _ => ex.Message
+        _ => ApiMessages.Describe(ex)
     };
 }
 
@@ -277,16 +258,20 @@ public sealed record PersonOption(string Code, string Label)
 /// What the dialog of an employee asks for: the changes to the employee, and what to do with the user name. For a new person Create is
 /// set (and Update is empty): the person is added first, then the user name is given to the code the server chose.
 /// </summary>
-public sealed record AdminEditResult(UpdateEmployeeRequest Update, SetCredentialsRequest? SetCredentials, bool RemoveCredentials, CreateEmployeeRequest? Create = null);
+public sealed record AdminEditResult(UpdateEmployeeRequest Update, SetCredentialsRequest? SetCredentials, bool RemoveCredentials, CreateEmployeeRequest? Create = null,
+    IReadOnlyList<HolidayDto>? ReligiousHolidays = null);
 
 /// <summary>The dialog in which the administrator changes an employee, or adds a new one (no row)</summary>
 public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogResult<AdminEditResult?>
 {
     private readonly AdminRow? _row;
+    private readonly IReadOnlyList<HolidayDto>? _religiousBefore;
 
-    public AdminEmployeeViewModel(AdminRow? row, IReadOnlyList<EmployeeDto> everybody)
+    public AdminEmployeeViewModel(AdminRow? row, IReadOnlyList<EmployeeDto> everybody, IReadOnlyList<HolidayDto>? religious = null)
     {
         _row = row;
+        _religiousBefore = religious;
+        _religiousText = ReligiousHolidayText.Format(religious);
         var employee = row?.Employee ?? new EmployeeDto("", "", true, null, false, null, false, null, null, Array.Empty<string>());
         IsNew = row == null;
         Title = IsNew ? Loc.T("Nova osoba") : $"{employee.Name} · {employee.Code}";
@@ -332,6 +317,9 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
     [ObservableProperty] private bool _mustChange = true;
     [ObservableProperty] private string _error = "";
 
+    /// <summary>The religious holidays of the person, one to a line: a date and a name (they differ from person to person)</summary>
+    [ObservableProperty] private string _religiousText = "";
+
     public AdminEditResult? Result { get; private set; }
 
     public event Action? RequestClose;
@@ -373,7 +361,15 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
         SetCredentialsRequest? set = null;
         if (hasName && hasPassword) set = new SetCredentialsRequest(Username.Trim(), NewPassword, MustChange);
 
-        Result = new AdminEditResult(update, set, RemoveCredentials: false);
+        // The holidays are sent only when the person changed the text
+        IReadOnlyList<HolidayDto>? religious = null;
+        if (ReligiousText.Trim() != ReligiousHolidayText.Format(_religiousBefore).Trim())
+        {
+            if (!ReligiousHolidayText.TryParse(ReligiousText, out var parsed, out var problem)) { Error = problem; return; }
+            religious = parsed;
+        }
+
+        Result = new AdminEditResult(update, set, RemoveCredentials: false, ReligiousHolidays: religious);
         RequestClose?.Invoke();
     }
 

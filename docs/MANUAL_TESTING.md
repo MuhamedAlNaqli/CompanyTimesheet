@@ -41,6 +41,9 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 - Kao **Haris**: u *Za odobravanje* se vide šihtarice "kao zamjena za Tarik". Haris smije odobriti ili vratiti; u historiji piše ko je odlučio i za koga. Svoju šihtaricu ne smije odobriti.
 
 ### E. Administracija (admin)
+- Bočna traka administratora ima odjeljke: **Pregled** (za pažnju + brojke: osobe, šifre, šihtarice ovog i prošlog mjeseca, praznici, revizija), **Osobe**, **Šifre**, **Praznici** i **Revizija**. Svaki odjeljak ima svoje dugmad (npr. *Nova osoba* samo u Osobama). Dugme *Otvori* u "Za pažnju" vodi u odjeljak koji to rješava.
+- *Praznici*: izaberite godinu strelicama, upišite datum i naziv, *Dodaj praznik*; ikona korpe uklanja. Bez praznika za tekuću godinu Pregled upozorava.
+- *Revizija*: zadnjih 150 događaja čitljivo, i dugme za provjeru lanca. U dijalogu osobe (*Osobe → Uredi*) su i **vjerski praznici** te osobe, jedan u redu (npr. `06.03.2027. Ramazanski bajram`).
 - Prijava `admin` otvara **samo administraciju**: administrator nema šihtaricu, ni podsjetnike, ni tabove za odobravanje. Prijavni prozor je zaseban; poslije prijave zamjenjuje ga prozor uloge, a *Odjava* vraća prijavni prozor.
 - *Nova osoba*: ime, (šifra: prazno = sljedeća slobodna Z-nnn), e-pošta, nadređeni, korisničko ime i prva lozinka. Nova osoba se odmah vidi u listi i u stablu, i može se prijaviti (pri prvoj prijavi bira svoju lozinku).
 - Tabela ima zaglavlja kolona (Šifra, Ime i prezime, Nadređeni, Korisničko ime i uloga). Dugme **Hijerarhija** pokazuje stablo: na vrhu osobe bez nadređenog, ispod njih podređeni; strelica ispod osobe otvara ili zatvara njene podređene, klik na osobu je uređuje.

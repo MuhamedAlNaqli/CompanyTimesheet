@@ -48,6 +48,25 @@ public interface ICompanyAdminClient
 
     Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default);
 
+    /// <summary>The figures of the first screen of the administrator</summary>
+    Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default);
+
+    Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default);
+
+    /// <summary>The religious holidays of one person (they differ from person to person)</summary>
+    Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default);
+
+    /// <summary>Replaces the religious holidays of one person with the given list</summary>
+    Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default);
+
+    /// <summary>Adds a state holiday, or renames the one on that date</summary>
+    Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default);
+
+    Task DeleteHolidayAsync(DateOnly date, CancellationToken ct = default);
+
+    /// <summary>The latest events of the audit log, newest first</summary>
+    Task<List<AuditEventDto>> GetAuditAsync(int take, CancellationToken ct = default);
+
     /// <summary>The codes of the legend, with the ones that were switched off</summary>
     Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default);
 

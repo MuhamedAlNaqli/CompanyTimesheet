@@ -94,6 +94,31 @@ public sealed record AccountMatchDto(string Account, string DisplayName, string?
 
 public sealed record HolidayDto(DateOnly Date, string Name);
 
+/// <summary>What the administrator sees first (see AdminOverviewService)</summary>
+public sealed record AdminOverviewDto(
+    OverviewPeopleDto People,
+    OverviewCodesDto Codes,
+    OverviewMonthDto ThisMonth,
+    OverviewMonthDto PreviousMonth,
+    OverviewHolidaysDto Holidays,
+    OverviewAuditDto Audit);
+
+/// <param name="WithoutUsername">Active people who cannot sign in yet</param>
+/// <param name="Locked">Accounts locked after wrong passwords</param>
+/// <param name="WithoutSupervisor">Active people at the top of the chart (nobody above them)</param>
+public sealed record OverviewPeopleDto(int Total, int Active, int Inactive, int WithoutUsername, int Locked, int Administrators, int WithoutSupervisor);
+
+public sealed record OverviewCodesDto(int Total, int Active, int SwitchedOff, int Green, int Blue, int Orange, int Red);
+
+/// <param name="Expected">People who have a timesheet in the month</param>
+/// <param name="NotStarted">Expected people with no timesheet yet</param>
+public sealed record OverviewMonthDto(int Year, int Month, int Expected, int NotStarted, int Draft, int Submitted, int Returned, int Approved);
+
+/// <param name="ThisYear">State holidays entered for the current year (none means the fund of hours is wrong)</param>
+public sealed record OverviewHolidaysDto(int Year, int ThisYear, int NextYear);
+
+public sealed record OverviewAuditDto(long Events, DateTime? LastUtc, IReadOnlyList<AuditEventDto> Recent);
+
 public sealed record TimeCodeDto(int Code, string NameBs, string NameEn, string Colour, string Unit, bool InMonthlyFund, bool IsOvertime, bool IsActive = true);
 
 /// <summary>A code of the legend as the administrator sees it. A system code is one the rules of the program rely on (it can be renamed, not removed).</summary>

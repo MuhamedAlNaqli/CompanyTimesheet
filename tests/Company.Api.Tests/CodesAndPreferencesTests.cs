@@ -201,4 +201,47 @@ public class CodesAndPreferencesTests
         StringAssert.Contains(Company.Api.Texts.ReminderTexts.Line(item, "en"), "September 2026");
         StringAssert.Contains(Company.Api.Texts.ReminderTexts.Body("Amra", new[] { item }, "en"), "Dear Amra");
     }
+
+    [TestMethod]
+    public async Task TheOverviewOfTheAdministrator_CountsPeopleCodesHolidaysAndSheets()
+    {
+        using var factory = new ApiFactory();
+        await factory.ImportAsync(ApiFactory.SmallList);
+        await factory.LinkAsync("Z-001", @"corpmra");
+
+        var first = await factory.Admin.GetFromJsonAsync<AdminOverviewDto>("/api/admin/overview");
+        Assert.AreEqual(5, first!.People.Total, "the administrator and the four people of the list");
+        Assert.AreEqual(5, first.People.Active);
+        Assert.AreEqual(1, first.People.Administrators);
+        Assert.AreEqual(22, first.Codes.Total);
+        Assert.AreEqual(12, first.Codes.Green);
+        Assert.AreEqual(6, first.Codes.Red);
+        Assert.AreEqual(0, first.Holidays.ThisYear, "no holidays entered: the overview says so");
+        Assert.AreEqual(4, first.ThisMonth.Expected, "the four employees have a timesheet this month; the administrator has none");
+        Assert.AreEqual(4, first.ThisMonth.NotStarted);
+        Assert.IsTrue(first.Audit.Events > 0);
+        Assert.IsTrue(first.Audit.Recent.Count > 0);
+
+        var year = DateTime.Today.Year;
+        await factory.Admin.PostAsJsonAsync("/api/admin/holidays", new HolidayDto(new DateOnly(year, 5, 1), "Praznik rada"));
+        await factory.Admin.PostAsJsonAsync("/api/admin/codes", new SaveCodeRequest(1050, "Edukacija", "", "Green", "Day", true));
+        var today = DateTime.Today;
+        await factory.As(@"corpmra").GetFromJsonAsync<SheetDto>($"/api/timesheet/{today.Year}/{today.Month}");
+
+        var second = await factory.Admin.GetFromJsonAsync<AdminOverviewDto>("/api/admin/overview");
+        Assert.AreEqual(1, second!.Holidays.ThisYear);
+        Assert.AreEqual(23, second.Codes.Total);
+        Assert.AreEqual(3, second.ThisMonth.NotStarted, "Amra opened her month");
+        Assert.AreEqual(1, second.ThisMonth.Draft);
+    }
+
+    [TestMethod]
+    public async Task TheOverview_IsOnlyForTheAdministrator()
+    {
+        using var factory = new ApiFactory();
+        await factory.ImportAsync(ApiFactory.SmallList);
+        await factory.LinkAsync("Z-001", @"corpmra");
+
+        Assert.AreEqual(HttpStatusCode.Forbidden, (await factory.As(@"corpmra").GetAsync("/api/admin/overview")).StatusCode);
+    }
 }

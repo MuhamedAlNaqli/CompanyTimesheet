@@ -138,6 +138,24 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default) => GetAsync<AuditVerificationDto>("/api/admin/audit/verify", ct);
 
+    public Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default) => GetAsync<AdminOverviewDto>("/api/admin/overview", ct);
+
+    public Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default) => GetAsync<List<HolidayDto>>($"/api/admin/holidays/{year}", ct);
+
+    public Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default) =>
+        GetAsync<List<HolidayDto>>($"/api/admin/employees/{Uri.EscapeDataString(code)}/religious-holidays", ct);
+
+    public Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Put, $"/api/admin/employees/{Uri.EscapeDataString(code)}/religious-holidays", holidays, ct);
+
+    public Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default) =>
+        SendAsync<HolidayDto>(HttpMethod.Post, "/api/admin/holidays", holiday, ct);
+
+    public Task DeleteHolidayAsync(DateOnly date, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Delete, $"/api/admin/holidays/{date:yyyy-MM-dd}", null, ct);
+
+    public Task<List<AuditEventDto>> GetAuditAsync(int take, CancellationToken ct = default) => GetAsync<List<AuditEventDto>>($"/api/admin/audit?take={take}", ct);
+
     public Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default) => GetAsync<List<CodeDefinitionDto>>("/api/admin/codes", ct);
 
     public Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default) =>

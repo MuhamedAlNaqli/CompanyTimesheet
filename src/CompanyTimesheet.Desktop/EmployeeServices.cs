@@ -112,7 +112,7 @@ public sealed class SheetFileSaver : ISheetFileSaver
         catch (ApiException ex)
         {
             _logger.LogWarning(ex, "The printed sheet was refused ({Code})", ex.Code);
-            return new FileSaveResult(null, ex.Code == "no-team" ? Loc.T("Nikome nisu dodijeljeni vaši nadzor ni odobravanje.") : ex.Message);
+            return new FileSaveResult(null, ex.Code == "no-team" ? Loc.T("Nikome nisu dodijeljeni vaši nadzor ni odobravanje.") : ApiMessages.Describe(ex));
         }
         catch (Exception ex)
         {

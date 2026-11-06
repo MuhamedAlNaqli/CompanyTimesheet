@@ -208,6 +208,35 @@ public class EmployeeViewModelTests
             return Task.CompletedTask;
         }
         public Task RemoveCredentialsAsync(string code, CancellationToken ct = default) { Calls.Add($"remove {code}"); Maybe(); return Task.CompletedTask; }
+        public AdminOverviewDto Overview { get; set; } = new(new OverviewPeopleDto(0, 0, 0, 0, 0, 0, 0), new OverviewCodesDto(0, 0, 0, 0, 0, 0, 0),
+            new OverviewMonthDto(2026, 9, 0, 0, 0, 0, 0, 0), new OverviewMonthDto(2026, 8, 0, 0, 0, 0, 0, 0), new OverviewHolidaysDto(2026, 10, 10),
+            new OverviewAuditDto(0, null, new List<AuditEventDto>()));
+        public List<HolidayDto> HolidayList { get; set; } = new();
+        public Dictionary<string, List<HolidayDto>> Religious { get; } = new();
+        public Task<List<HolidayDto>> GetReligiousHolidaysAsync(string code, CancellationToken ct = default) =>
+            Task.FromResult(Religious.TryGetValue(code, out var list) ? list.ToList() : new List<HolidayDto>());
+        public Task SetReligiousHolidaysAsync(string code, IReadOnlyList<HolidayDto> holidays, CancellationToken ct = default)
+        {
+            Calls.Add($"religious {code} {string.Join(",", holidays.Select(h => h.Date.ToString("yyyy-MM-dd") + " " + h.Name))}");
+            Religious[code] = holidays.ToList();
+            return Task.CompletedTask;
+        }
+        public Task<AdminOverviewDto> GetOverviewAsync(CancellationToken ct = default) => Task.FromResult(Overview);
+        public Task<List<HolidayDto>> GetHolidaysAsync(int year, CancellationToken ct = default) => Task.FromResult(HolidayList.Where(h => h.Date.Year == year).ToList());
+        public Task<HolidayDto> SaveHolidayAsync(HolidayDto holiday, CancellationToken ct = default)
+        {
+            Calls.Add($"holiday {holiday.Date:yyyy-MM-dd} {holiday.Name}");
+            HolidayList.RemoveAll(h => h.Date == holiday.Date);
+            HolidayList.Add(holiday);
+            return Task.FromResult(holiday);
+        }
+        public Task DeleteHolidayAsync(DateOnly date, CancellationToken ct = default)
+        {
+            Calls.Add($"holiday-remove {date:yyyy-MM-dd}");
+            HolidayList.RemoveAll(h => h.Date == date);
+            return Task.CompletedTask;
+        }
+        public Task<List<AuditEventDto>> GetAuditAsync(int take, CancellationToken ct = default) => Task.FromResult(new List<AuditEventDto>());
         public List<CodeDefinitionDto> Codes { get; set; } = new();
         public Task<List<CodeDefinitionDto>> GetCodesAsync(CancellationToken ct = default) { Calls.Add("codes"); return Task.FromResult(Codes); }
         public Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default)
@@ -1114,6 +1143,8 @@ public class EmployeeViewModelTests
         admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
         await vm.LoadCommand.ExecuteAsync(null);
 
+        Assert.IsTrue(vm.Admin.IsOverview, "the administration opens on the overview");
+        await vm.OpenAdminSectionCommand.ExecuteAsync("people");
         Assert.IsTrue(vm.Admin.ShowList);
         vm.Admin.ShowChartViewCommand.Execute(null);
         Assert.IsTrue(vm.Admin.ShowChart);
@@ -1686,5 +1717,175 @@ public class EmployeeViewModelTests
 
         var unused = new CodeEditViewModel(new CodeDefinitionDto(1051, "Novo", "New", "Green", "Day", true, false, false));
         Assert.IsTrue(unused.CanChangeMeaning);
+    }
+
+    // ---- the sections of the administration ----------------------------------------------------------------------------------------
+
+    [TestMethod]
+    public async Task TheSideBarOpensTheSections_AndOnlyOneIsShownAtATime()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out _);
+        client.IsAdmin = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        foreach (var section in new[] { "overview", "people", "codes", "holidays", "audit" })
+        {
+            await vm.OpenAdminSectionCommand.ExecuteAsync(section);
+            var shown = new[] { vm.Admin.IsOverview, vm.Admin.ShowPeople, vm.Admin.ShowCodes, vm.Admin.ShowHolidays, vm.Admin.ShowAudit };
+            Assert.AreEqual(1, shown.Count(x => x), $"only the section {section} is shown");
+            Assert.AreEqual(section, vm.Admin.Section);
+        }
+
+        await vm.OpenAdminSectionCommand.ExecuteAsync("nonsense");
+        Assert.AreEqual("audit", vm.Admin.Section, "a section that does not exist changes nothing");
+    }
+
+    [TestMethod]
+    public async Task TheOverview_ShowsFigures_AndSaysWhatNeedsAttention()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Overview = new AdminOverviewDto(
+            new OverviewPeopleDto(12, 10, 2, 3, 1, 1, 4),
+            new OverviewCodesDto(24, 22, 2, 15, 1, 3, 6),
+            new OverviewMonthDto(2026, 9, 9, 2, 3, 2, 1, 1),
+            new OverviewMonthDto(2026, 8, 9, 0, 0, 1, 0, 8),
+            new OverviewHolidaysDto(2026, 0, 0),
+            new OverviewAuditDto(120, DateTime.UtcNow, new List<AuditEventDto> { new(1, DateTime.UtcNow, "Z-000", "CodeAdded", "Code", "1050", "x") }));
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.AreEqual(8, vm.Admin.Cards.Count);
+        Assert.AreEqual("10", vm.Admin.Cards.Single(c => c.Title == "Osobe").Value);
+        Assert.IsTrue(vm.Admin.Cards.Single(c => c.Title == "Bez korisničkog imena").IsWarning);
+        Assert.AreEqual("8/9", vm.Admin.Cards.Single(c => c.Title.StartsWith("Šihtarice: Avgust") || c.Title.StartsWith("Šihtarice: August")).Value);
+        var attention = vm.Admin.Attention.Select(a => a.Section).ToList();
+        CollectionAssert.Contains(attention, "holidays", "no holidays entered for the year");
+        CollectionAssert.Contains(attention, "people", "people without a user name and locked accounts");
+        Assert.IsTrue(vm.Admin.Attention.First().IsWarning, "the missing holidays are the first thing to look at");
+        Assert.IsTrue(vm.Admin.HasRecentEvents);
+        Assert.AreEqual("Dodana šifra", vm.Admin.RecentEvents[0].ActionText);
+    }
+
+    [TestMethod]
+    public async Task AQuietOverview_SaysThatAllIsWell()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Overview = admin.Overview with { Holidays = new OverviewHolidaysDto(DateTime.Today.Year, 12, 12) };
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.AreEqual(1, vm.Admin.Attention.Count);
+        Assert.IsFalse(vm.Admin.Attention[0].IsWarning);
+        StringAssert.Contains(vm.Admin.Attention[0].Text, "Sve je u redu");
+    }
+
+    [TestMethod]
+    public async Task AHolidayIsAddedAndRemoved_InTheYearOnScreen()
+    {
+        var (vm, client, dialogs, _, _) = Create();
+        var admin = (FakeAdmin)typeof(EmployeeViewModel).GetField("_admin", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(vm)!;
+        client.IsAdmin = true;
+        await vm.LoadCommand.ExecuteAsync(null);
+        await vm.OpenAdminSectionCommand.ExecuteAsync("holidays");
+        Assert.IsTrue(vm.Admin.HasNoHolidays);
+        admin.Calls.Clear();
+
+        // Nothing is added without a date and a name
+        vm.Admin.NewHolidayDate = null;
+        await vm.AddHolidayCommand.ExecuteAsync(null);
+        Assert.AreEqual(0, admin.Calls.Count);
+        Assert.IsTrue(vm.HasError);
+
+        vm.Admin.NewHolidayDate = new DateTimeOffset(new DateTime(2027, 1, 1));
+        vm.Admin.NewHolidayName = "Nova godina";
+        await vm.AddHolidayCommand.ExecuteAsync(null);
+
+        CollectionAssert.Contains(admin.Calls, "holiday 2027-01-01 Nova godina");
+        Assert.AreEqual(2027, vm.Admin.HolidayYear, "the list moves to the year of the holiday that was added");
+        Assert.AreEqual(1, vm.Admin.Holidays.Count);
+        Assert.AreEqual("", vm.Admin.NewHolidayName, "the form is empty for the next one");
+
+        dialogs.Answer = false;
+        await vm.RemoveHolidayCommand.ExecuteAsync(vm.Admin.Holidays[0]);
+        Assert.AreEqual(1, vm.Admin.Holidays.Count, "declined");
+
+        dialogs.Answer = true;
+        await vm.RemoveHolidayCommand.ExecuteAsync(vm.Admin.Holidays[0]);
+        Assert.AreEqual(0, vm.Admin.Holidays.Count);
+
+        await vm.ChangeHolidayYearCommand.ExecuteAsync("-1");
+        Assert.AreEqual(2026, vm.Admin.HolidayYear);
+    }
+
+    [TestMethod]
+    public void TheSideBarFoldsByItself_InANarrowWindow_AndOpensAgainInAWideOne()
+    {
+        var (vm, _, _, _, _) = Create();
+        Assert.IsTrue(vm.SidebarExpanded);
+
+        vm.SetWindowWidth(1000);
+        Assert.IsTrue(vm.IsCompact);
+        Assert.IsFalse(vm.SidebarShowsText);
+        Assert.AreEqual(60, vm.SidebarWidth);
+        Assert.IsTrue(vm.SidebarExpanded, "the choice of the person is not changed by the size of the window");
+
+        vm.SetWindowWidth(1400);
+        Assert.IsFalse(vm.IsCompact);
+        Assert.AreEqual(224, vm.SidebarWidth);
+
+        vm.ToggleSidebarCommand.Execute(null);
+        Assert.AreEqual(60, vm.SidebarWidth, "folded by the person");
+    }
+
+    [TestMethod]
+    public void TheReligiousHolidays_AreWrittenOneToALine_AndReadBack()
+    {
+        var list = new[] { new HolidayDto(new DateOnly(2027, 3, 6), "Ramazanski bajram"), new HolidayDto(new DateOnly(2027, 1, 7), "") };
+        var text = ReligiousHolidayText.Format(list);
+        Assert.AreEqual("07.01.2027.\n06.03.2027. Ramazanski bajram", text);
+
+        Assert.IsTrue(ReligiousHolidayText.TryParse("06.03.2027. Ramazanski bajram\n7.1.2027\n2027-05-01 Praznik\n\n06.03.2027. duplo", out var parsed, out _));
+        Assert.AreEqual(3, parsed.Count, "an empty line is skipped and a date written twice counts once");
+        Assert.AreEqual("Ramazanski bajram", parsed[0].Name);
+        Assert.AreEqual(new DateOnly(2027, 1, 7), parsed[1].Date);
+
+        Assert.IsFalse(ReligiousHolidayText.TryParse("Bajram 2027", out _, out var problem));
+        StringAssert.Contains(problem, "Bajram 2027");
+        Assert.IsTrue(ReligiousHolidayText.TryParse("", out var none, out _));
+        Assert.AreEqual(0, none.Count);
+    }
+
+    [TestMethod]
+    public async Task TheReligiousHolidaysOfAPerson_AreShownInTheDialog_AndSavedOnlyWhenChanged()
+    {
+        var (vm, client, dialogs, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
+        admin.Religious["Z-001"] = new() { new HolidayDto(new DateOnly(2027, 3, 6), "Ramazanski bajram") };
+        await vm.LoadCommand.ExecuteAsync(null);
+        await vm.OpenAdminSectionCommand.ExecuteAsync("people");
+
+        // Unchanged: the dialog gives back no holidays, so nothing is sent
+        var dialog = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, admin.Religious["Z-001"]);
+        Assert.AreEqual("06.03.2027. Ramazanski bajram", dialog.ReligiousText);
+        dialog.SaveCommand.Execute(null);
+        Assert.IsNull(dialog.Result!.ReligiousHolidays);
+
+        // Changed: the new list goes to the server with the rest of the changes
+        var changed = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, admin.Religious["Z-001"]) { ReligiousText = "06.03.2027. Ramazanski bajram\n16.05.2027. Kurban-bajram" };
+        changed.SaveCommand.Execute(null);
+        dialogs.AdminEdit = changed.Result;
+        admin.Calls.Clear();
+        await vm.EditEmployeeCommand.ExecuteAsync(vm.Admin.Rows[0]);
+
+        Assert.IsTrue(admin.Calls.Any(c => c.StartsWith("religious Z-001") && c.Contains("2027-05-16 Kurban-bajram")));
+
+        // A line that is not a date keeps the dialog open
+        var bad = new AdminEmployeeViewModel(vm.Admin.Rows[0], vm.Admin.Employees, null) { ReligiousText = "nije datum" };
+        bad.SaveCommand.Execute(null);
+        Assert.IsNull(bad.Result);
+        Assert.AreNotEqual("", bad.Error);
     }
 }

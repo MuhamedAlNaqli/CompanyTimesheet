@@ -144,6 +144,6 @@ public sealed partial class TeamViewModel : ObservableObject
         "already-reminded" => Loc.F("Podsjetnik za {0} je već poslan. Pokušajte kasnije.", name),
         "nothing-to-remind" => Loc.F("Za {0} nema šta podsjećati: šihtarica je predana ili mjesec još nije počeo.", name),
         "not-in-team" => Loc.F("{0} se ne javlja vama.", name),
-        _ => ex.Message
+        _ => ApiMessages.Describe(ex)
     };
 }

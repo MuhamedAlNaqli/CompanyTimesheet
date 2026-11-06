@@ -284,8 +284,8 @@ public partial class EmployeeViewModel : ObservableObject
             {
                 "not-registered" => Loc.T("Vaš račun nije povezan sa zaposlenikom. Obratite se administratoru."),
                 "unauthorized" => Loc.T("Server nije prihvatio vašu Windows prijavu. Provjerite da ste prijavljeni firmskim računom i da ste u firmskoj mreži."),
-                "unreachable" or "timeout" => Loc.T("Server firme nije dostupan. Provjerite mrežnu vezu (VPN). ") + ex.Message,
-                _ => ex.Message
+                "unreachable" or "timeout" => Loc.T("Server firme nije dostupan. Provjerite mrežnu vezu (VPN)."),
+                _ => ApiMessages.Describe(ex)
             };
             if (connecting) IsConnected = false;
             return false;
@@ -771,7 +771,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (ApiException ex)
         {
             _logger.LogWarning(ex, "The team could not be read or reminded ({Code})", ex.Code);
-            ErrorText = ex.Message;
+            ErrorText = ApiMessages.Describe(ex);
         }
         catch (Exception ex)
         {
@@ -840,7 +840,18 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (row == null) return;
 
-        var result = await _dialogs.AdminEditAsync(new AdminEmployeeViewModel(row, Admin.Employees));
+        // The religious holidays are read for the dialog; a failure to read them must not stop the person from editing the rest
+        IReadOnlyList<HolidayDto>? religious = null;
+        try
+        {
+            religious = await _admin.GetReligiousHolidaysAsync(row.Code);
+        }
+        catch (ApiException ex)
+        {
+            _logger.LogWarning(ex, "The religious holidays of {Code} could not be read", row.Code);
+        }
+
+        var result = await _dialogs.AdminEditAsync(new AdminEmployeeViewModel(row, Admin.Employees, religious));
         if (result == null) return;
 
         await RunAdminAsync(async () =>
@@ -854,6 +865,7 @@ public partial class EmployeeViewModel : ObservableObject
             {
                 await _admin.UpdateEmployeeAsync(row.Code, result.Update);
                 if (result.SetCredentials != null) await _admin.SetCredentialsAsync(row.Code, result.SetCredentials);
+                if (result.ReligiousHolidays != null) await _admin.SetReligiousHolidaysAsync(row.Code, result.ReligiousHolidays);
                 InfoText = Loc.F("Sačuvano: {0}.", row.Name);
             }
 
@@ -1157,7 +1169,7 @@ public partial class EmployeeViewModel : ObservableObject
         "same-password" => Loc.T("Izaberite lozinku različitu od trenutne."),
         "wrong-password" => Loc.T("Trenutna lozinka nije tačna."),
         "unreachable" or "timeout" => Loc.T("Server nije dostupan. Provjerite adresu servera i mrežnu vezu (VPN)."),
-        _ => ex.Message
+        _ => ApiMessages.Describe(ex)
     };
 
     // ---- Sign-out ----------------------------------------------------------------------------------------------------

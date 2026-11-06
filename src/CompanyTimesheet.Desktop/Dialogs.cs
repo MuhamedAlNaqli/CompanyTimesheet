@@ -244,7 +244,7 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         }
         catch (Company.Api.Client.ApiException ex)
         {
-            Error = ex.Message;
+            Error = ApiMessages.Describe(ex);
         }
     }
 

@@ -14,6 +14,12 @@ public static class MeEndpoints
     {
         app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
+        // For a monitor or a load balancer: answers only when the database can be reached, so "up" means "can work"
+        app.MapGet("/health/ready", async (CompanyDbContext db) =>
+            await db.Database.CanConnectAsync()
+                ? Results.Ok(new { status = "ready" })
+                : Results.Json(new { status = "database-unreachable" }, statusCode: StatusCodes.Status503ServiceUnavailable)).AllowAnonymous();
+
         // Any signed-in caller: what the server sees. This is how IT checks Windows or Entra sign-in on a test server.
         app.MapGet("/api/auth/diagnostics", async (ClaimsPrincipal user, CompanyDbContext db) =>
         {

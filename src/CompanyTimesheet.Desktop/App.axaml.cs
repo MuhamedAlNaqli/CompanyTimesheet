@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
@@ -21,6 +22,21 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // A failure that nobody caught must not close the program under the person's hands: it is logged, and the window stays
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            Serilog.Log.Error(e.Exception, "Unhandled exception on the interface thread");
+            e.Handled = true;
+            if (_viewModel != null && !_viewModel.HasError)
+                _viewModel.ErrorText = Loc.T("Došlo je do greške: ") + e.Exception.Message;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => Serilog.Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception");
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Serilog.Log.Warning(e.Exception, "A background task failed and nobody observed it");
+            e.SetObserved();
+        };
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // The look this computer remembered; after sign-in the choice saved on the person's account replaces it
