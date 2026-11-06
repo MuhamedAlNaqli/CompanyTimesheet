@@ -232,7 +232,7 @@ public class EmployeeModeTests
 
         Assert.AreEqual("05.09.", row.DateText);
         Assert.AreEqual("vikend", row.TypeText);
-        Assert.AreEqual("1022 Godišnji odmor A", row.EntriesText);
+        StringAssert.StartsWith(row.EntriesText, "1022 Godišnji odmor A");
         StringAssert.Contains(row.OvertimeText, "2023");
         StringAssert.Contains(row.OvertimeText, "2,5 h");
         Assert.AreEqual(1, row.IssueCount);

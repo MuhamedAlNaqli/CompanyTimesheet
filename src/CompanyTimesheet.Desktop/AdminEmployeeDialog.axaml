@@ -14,7 +14,7 @@
             <TextBlock Text="{em:Tr 'Ime i prezime'}" Classes="label"/>
             <TextBox Name="AdminName" Classes="form" Text="{Binding Name}"/>
 
-            <TextBlock Text="{em:Tr 'E-pošta (za podsjetnike, nije obavezna)'}" Classes="label"/>
+            <TextBlock Text="{em:Tr 'E-pošta (obavezna: reset lozinke i podsjetnici)'}" Classes="label"/>
             <TextBox Name="AdminEmail" Classes="form" Text="{Binding Email}"/>
 
             <StackPanel Orientation="Horizontal" Spacing="24">

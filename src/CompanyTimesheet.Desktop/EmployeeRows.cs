@@ -29,8 +29,10 @@ public sealed class EmployeeDayRow
             : $"{e.Code} {EmployeeFormat.CodeName(e.Code)}"));
         var overtimeMinutes = day.OvertimeAllocations.Sum(a => a.Minutes);
         CalendarOvertimeText = overtimeMinutes == 0 ? "" : Loc.T("Prek. ") + EmployeeFormat.Hours(overtimeMinutes);
-        EntriesText = string.Join("\n", day.Entries.Select(EmployeeFormat.Entry));
         OvertimeText = string.Join("\n", day.OvertimeAllocations.Select(a => $"{a.Code} {EmployeeFormat.CodeName(a.Code)}: {EmployeeFormat.Hours(a.Minutes)}"));
+        // The regular entries and the overtime are one list: every code of the day, one under the other
+        EntriesText = string.Join("\n", day.Entries.Select(EmployeeFormat.Entry).Concat(OvertimeText.Length == 0 ? Array.Empty<string>() : OvertimeText.Split('\n')));
+        HasEntries = day.Entries.Count > 0 || day.OvertimeAllocations.Count > 0;
         var mine = issues.Where(i => i.Date == day.Date).ToList();
         IssueCount = mine.Count;
         HasBlocking = mine.Any(i => i.Severity == IssueSeverity.Blocking);
@@ -60,7 +62,7 @@ public sealed class EmployeeDayRow
     public bool HasIssues => IssueCount > 0;
     public bool HasBlocking { get; }
     public string IssueTooltip { get; }
-    public bool HasEntries => Day.Entries.Count > 0;
+    public bool HasEntries { get; }
 }
 
 /// <summary>One square of the calendar: a day of the month, or an empty square before the first</summary>

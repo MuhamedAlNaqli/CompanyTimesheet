@@ -373,22 +373,19 @@
             <Border IsVisible="{Binding ShowDaysBody}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">
                 <Grid>
                     <TextBlock Name="EmpApprovalsHint" IsVisible="{Binding ShowApprovalsHint}" Text="{em:Tr 'Izaberite šihtaricu iz liste desno da je pregledate.'}" Margin="24"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                Foreground="{DynamicResource AppTextMuted}"/>
 
                     <!-- List, with the heading of each column -->
                     <!-- A window too narrow for the columns gets a horizontal scroll bar instead of letting the actions run out of the card -->
-                    <ScrollViewer IsVisible="{Binding IsListView}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ScrollViewer IsVisible="{Binding ShowListPane}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <Grid MinWidth="560" RowDefinitions="Auto,*">
                     <Border Margin="6,6,6,0" Padding="0,6" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="5,80,100,*,120,64,90">
+                        <Grid ColumnDefinitions="5,80,130,*,48,90">
                             <TextBlock Grid.Column="1" Text="{em:Tr 'Datum'}" Margin="10,0,0,0" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                             <TextBlock Grid.Column="2" Text="{em:Tr 'Vrsta dana'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                             <TextBlock Grid.Column="3" Text="{em:Tr 'Unosi'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="4" Text="{em:Tr 'Prekovremeni rad'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
-                                       ToolTip.Tip="{em:Tr 'Sati prekovremenog rada upisani za taj dan'}"/>
-                            <TextBlock Grid.Column="5" Text="{em:Tr 'Primjedbe'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"
-                                       ToolTip.Tip="{em:Tr 'Broj primjedbi provjere unosa za taj dan; pređite mišem preko znaka da vidite šta je u pitanju'}"/>
-                            <TextBlock Grid.Column="6" Text="{em:Tr 'Radnje'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"
+                            <TextBlock Grid.Column="5" Text="{em:Tr 'Radnje'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"
                                        IsVisible="{Binding IsEditable}"/>
                         </Grid>
                     </Border>
@@ -397,7 +394,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="em:EmployeeDayRow">
                                     <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,2">
-                                        <Grid ColumnDefinitions="5,80,100,*,120,64,90" MinHeight="40">
+                                        <Grid ColumnDefinitions="5,80,130,*,48,90" MinHeight="40">
                                             <Border Background="{Binding Stripe}" CornerRadius="2" Margin="0,4"/>
                                             <StackPanel Grid.Column="1" Margin="10,4,0,4" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding DateText}" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}"/>
@@ -407,14 +404,12 @@
                                                        Foreground="{DynamicResource AppTextMuted}"/>
                                             <TextBlock Grid.Column="3" Text="{Binding EntriesText}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4"
                                                        Foreground="{DynamicResource AppTextStrong}"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding Sheet.OvertimeText}" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
-                                                       Foreground="#B45309"/>
-                                            <StackPanel Grid.Column="5" IsVisible="{Binding HasIssues}" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                            <StackPanel Grid.Column="4" IsVisible="{Binding HasIssues}" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
                                                         Background="Transparent" ToolTip.Tip="{Binding IssueTooltip}">
                                                 <materialIcons:MaterialIcon Kind="AlertOutline" Width="16" Height="16" Foreground="#B45309"/>
                                                 <TextBlock Text="{Binding IssueCount}" FontSize="12" FontWeight="SemiBold" Foreground="#B45309"/>
                                             </StackPanel>
-                                            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                            <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                         IsVisible="{Binding $parent[Window].DataContext.IsEditable}">
                                                 <Button Classes="icon" Width="32" Height="32" ToolTip.Tip="{em:Tr 'Uredi dan'}"
                                                         Command="{Binding $parent[Window].DataContext.EditDayCommand}" CommandParameter="{Binding}">
@@ -435,7 +430,7 @@
                     </ScrollViewer>
 
                     <!-- Calendar: a week to a row, Monday first; a click on a day opens it -->
-                    <ScrollViewer IsVisible="{Binding IsCalendarView}">
+                    <ScrollViewer IsVisible="{Binding ShowCalendarPane}">
                         <StackPanel Margin="10" Spacing="6">
                             <ItemsControl ItemsSource="{Binding Sheet.WeekdayHeaders}" IsVisible="{Binding Sheet.HasDays}">
                                 <ItemsControl.ItemsPanel>
@@ -571,13 +566,8 @@
                                                 <TextBlock Text="{Binding Header}" FontSize="11" FontWeight="SemiBold" Foreground="#B45309"/>
                                                 <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextStrong}"/>
                                                 <TextBlock Text="{Binding AnswerText}" IsVisible="{Binding HasAnswer}" TextWrapping="Wrap" FontSize="12" Foreground="#15803D"/>
-                                                <Button Classes="secondary" Padding="10,5" FontSize="12" HorizontalAlignment="Left" IsVisible="{Binding CanAnswer}"
-                                                        Command="{Binding $parent[Window].DataContext.AnswerCommand}" CommandParameter="{Binding}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <materialIcons:MaterialIcon Kind="Reply" Width="14" Height="14"/>
-                                                        <TextBlock Text="{em:Tr 'Odgovori'}"/>
-                                                    </StackPanel>
-                                                </Button>
+                                                <TextBlock IsVisible="{Binding CanAnswer}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"
+                                                           Text="{em:Tr 'Odgovor upisujete pri ponovnoj predaji šihtarice.'}"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -629,6 +619,15 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
                                         <TextBlock Text="{Binding}" FontSize="12" Foreground="{DynamicResource AppTextMuted}" Margin="0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{em:Tr 'Praznici u mjesecu'}" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0" IsVisible="{Binding Sheet.HasHolidays}"
+                                       Foreground="{DynamicResource AppTextStrong}"/>
+                            <ItemsControl ItemsSource="{Binding Sheet.HolidayLines}" IsVisible="{Binding Sheet.HasHolidays}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{Binding}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}" Margin="0,1"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

@@ -52,10 +52,14 @@ public partial class EmployeeViewModel : ObservableObject
 
     /// <summary>The month as a calendar instead of a list; remembered for the next time</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsListView))]
+    [NotifyPropertyChangedFor(nameof(IsListView), nameof(ShowListPane), nameof(ShowCalendarPane))]
     private bool _isCalendarView = EmployeePreferences.LoadCalendarView();
 
     public bool IsListView => !IsCalendarView;
+
+    // With no timesheet chosen in the approvals there is only the hint in the card, not the empty headings of a list
+    public bool ShowListPane => IsListView && !ShowApprovalsHint;
+    public bool ShowCalendarPane => IsCalendarView && !ShowApprovalsHint;
 
     partial void OnIsCalendarViewChanged(bool value) => EmployeePreferences.SaveCalendarView(value);
 
@@ -177,6 +181,8 @@ public partial class EmployeeViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowTeamToolbar));
         OnPropertyChanged(nameof(ShowReviewToolbar));
         OnPropertyChanged(nameof(ShowApprovalsHint));
+        OnPropertyChanged(nameof(ShowListPane));
+        OnPropertyChanged(nameof(ShowCalendarPane));
         OnPropertyChanged(nameof(ShowSignInForm));
     }
 
@@ -502,9 +508,29 @@ public partial class EmployeeViewModel : ObservableObject
     private async Task SubmitAsync()
     {
         if (!CanSubmit) return;
-        var confirmed = await _dialogs.ConfirmAsync(Loc.T("Predaj na odobravanje"),
-            Loc.F("Nakon predaje je šihtarica za {0} zaključana dok je neko od odobravatelja ne vrati. Predati?", MonthTitle));
-        if (confirmed) await RunAsync(() => _client.SubmitAsync(Year, Month), refreshPending: true);
+
+        // One process: what the approver wrote is answered in the same step in which the timesheet is submitted again
+        var answers = new List<(int Index, string Text)>();
+        foreach (var message in Sheet.Messages.Where(m => m.CanAnswer))
+        {
+            var prompt = new TextPromptViewModel(Loc.T("Odgovor na poruku"), Loc.T("Vaš odgovor"), Loc.T("Odgovori i predaj"), $"{message.Header}: {message.Text}");
+            var answer = await _dialogs.PromptAsync(prompt);
+            if (answer == null) return;
+            answers.Add((message.Message.Index, answer));
+        }
+
+        if (answers.Count == 0)
+        {
+            var confirmed = await _dialogs.ConfirmAsync(Loc.T("Predaj na odobravanje"),
+                Loc.F("Nakon predaje je šihtarica za {0} zaključana dok je neko od odobravatelja ne vrati. Predati?", MonthTitle));
+            if (!confirmed) return;
+        }
+
+        await RunAsync(async () =>
+        {
+            foreach (var (index, text) in answers) await _client.AnswerAsync(Year, Month, index, text);
+            return await _client.SubmitAsync(Year, Month);
+        }, refreshPending: true);
     }
 
     [RelayCommand]

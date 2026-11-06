@@ -204,7 +204,7 @@ public class WorkflowTests
             Assert.IsTrue(mine.Editable, "a returned sheet is editable again");
             Assert.AreEqual("Prekovremeni sati nisu jasni", mine.Workflow!.Messages.Single().Text);
             Assert.AreEqual("Z-003", mine.Workflow.Messages.Single().From);
-            Assert.IsFalse(mine.Workflow.CanSubmit, "the message is not answered yet");
+            Assert.IsTrue(mine.Workflow.CanSubmit, "the program answers the message in the same step as the submission");
             Assert.AreEqual("unanswered-messages", await ErrorCode(await amra.PostAsync(Url + "/submit", null), HttpStatusCode.Conflict));
 
             var answered = await Read(await amra.PostAsJsonAsync(Url + "/messages/0/answer", new AnswerRequest("Dodan opis")));

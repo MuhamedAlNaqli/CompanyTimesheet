@@ -197,7 +197,7 @@ public static class Translations
         ["Šifra (ostavite prazno da se dodijeli sljedeća slobodna)"] = "Code (leave empty to get the next free one)",
         ["npr. Z-007"] = "e.g. Z-007",
         ["Ime i prezime"] = "First and last name",
-        ["E-pošta (za podsjetnike, nije obavezna)"] = "E-mail (for reminders, optional)",
+        ["E-pošta (obavezna: reset lozinke i podsjetnici)"] = "E-mail (required: password reset and reminders)",
         ["Administrator"] = "Administrator",
         ["Nadređeni"] = "Supervisor",
         ["Određeni odobravatelj (ako nema nadređenog)"] = "Designated approver (if there is no supervisor)",
@@ -496,5 +496,11 @@ public static class Translations
         ["Server nije mogao završiti zahtjev. Pokušajte ponovo; ako se ponavlja, javite administratoru."] = "The server could not complete the request. Try again; if it repeats, tell the administrator.",
         ["Server firme nije dostupan. Provjerite mrežnu vezu (VPN)."] = "The company server is not available. Check the network connection (VPN).",
         ["Upisani fiksni državni praznici"] = "Fixed state holidays entered",
+        ["E-pošta je obavezna."] = "E-mail is required.",
+        ["E-pošta nije ispravna."] = "The e-mail address is not valid.",
+        ["Odgovori i predaj"] = "Answer and submit",
+        ["Odgovor upisujete pri ponovnoj predaji šihtarice."] = "You write the answer when you submit the timesheet again.",
+        ["Praznici u mjesecu"] = "Holidays in the month",
+        ["nema unosa"] = "no entry",
     };
 }

@@ -181,7 +181,7 @@ public sealed class SheetDtoBuilder
             sheet.Events.OrderBy(e => e.AtUtc).ThenBy(e => e.Id)
                 .Select(e => new HistoryDto(DateTime.SpecifyKind(e.AtUtc, DateTimeKind.Utc), e.Kind.ToDto(), e.ActorCode, Name(e.ActorCode), e.OnBehalfOf, e.Revision, e.Step, e.Text)).ToList(),
             revisions,
-            isOwner && IsEditable(sheet) && !hasBlocking && sheet.Messages.All(m => !string.IsNullOrWhiteSpace(m.Answer)),
+            isOwner && IsEditable(sheet) && !hasBlocking, // the unanswered messages of the approver are answered by the program in the same step as the submission
             // The owner decides on their own timesheet only when nobody is above them (the chain is themselves alone)
             current != null && (Same(viewer, current) || actsForCurrent) && (!isOwner || (chain.Count == 1 && Same(chain[0], sheet.EmployeeCode))));
     }

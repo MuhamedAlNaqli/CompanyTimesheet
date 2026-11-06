@@ -1059,6 +1059,9 @@ public class EmployeeViewModelTests
         dialog.Name = "Nova Osoba";
         dialog.Username = "nova";
         dialog.SaveCommand.Execute(null);
+        StringAssert.Contains(dialog.Error, "obavezna", "the e-mail address is required for a new person");
+        dialog.Email = "nova@firma.ba";
+        dialog.SaveCommand.Execute(null);
         StringAssert.Contains(dialog.Error, "prvu lozinku", "a new user name needs its first password");
 
         dialog.NewPassword = "Start-password-1";

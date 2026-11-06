@@ -71,6 +71,7 @@ public sealed partial class SheetViewModel : ObservableObject
         Carried.Clear();
         Issues.Clear();
         TotalLines.Clear();
+        HolidayLines.Clear();
         Messages.Clear();
         History.Clear();
         Revisions.Clear();
@@ -109,9 +110,24 @@ public sealed partial class SheetViewModel : ObservableObject
         foreach (var (code, days) in summary.DaysByCode.Where(p => TimeCodes.Get(p.Key).IsAbsence).OrderBy(p => p.Key))
             TotalLines.Add(Loc.F("{0} {1}: {2} {3}", code, EmployeeFormat.CodeName(code), days, Loc.T(days == 1 ? "dan" : "dana")));
 
+        // The holidays of the month: for each, whether the person used it (an entry on that day) or worked
+        HolidayLines.Clear();
+        foreach (var day in sheet.Days.Where(d => d.Type == DayKind.Holiday))
+        {
+            var used = day.Entries.Count == 0
+                ? Loc.T("nema unosa")
+                : string.Join(", ", day.Entries.Select(e => e.Code + " " + EmployeeFormat.CodeName(e.Code)));
+            HolidayLines.Add($"{EmployeeFormat.ShortDate(day.Date)} {day.HolidayName}: {used}");
+        }
+
         ShowWorkflow(sheet, own);
         RaiseLists();
     }
+
+    /// <summary>The holidays that fall in the month, with what the person entered on them</summary>
+    public ObservableCollection<string> HolidayLines { get; } = new();
+
+    public bool HasHolidays => HolidayLines.Count > 0;
 
     /// <summary>Monday first: empty squares up to the weekday of the first, then the days</summary>
     private void BuildCalendar()
@@ -164,5 +180,6 @@ public sealed partial class SheetViewModel : ObservableObject
         OnPropertyChanged(nameof(HasIssues));
         OnPropertyChanged(nameof(NoIssues));
         OnPropertyChanged(nameof(NoOvertime));
+        OnPropertyChanged(nameof(HasHolidays));
     }
 }

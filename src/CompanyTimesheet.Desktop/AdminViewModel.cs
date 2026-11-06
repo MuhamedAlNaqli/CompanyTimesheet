@@ -323,6 +323,11 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
         if (string.IsNullOrWhiteSpace(Name)) { Error = Loc.T("Ime ne smije biti prazno."); return; }
         if (ActiveFrom != null && ActiveTo != null && ActiveTo < ActiveFrom) { Error = Loc.T("Kraj zaposlenja je prije početka."); return; }
 
+        // The address is needed for the reset of the password and for the reminders; a person already in the list may still be without one
+        var email = Email.Trim();
+        if (IsNew && email.Length == 0) { Error = Loc.T("E-pošta je obavezna."); return; }
+        if (email.Length > 0 && (!email.Contains('@') || email.StartsWith('@') || email.EndsWith('@') || email.Contains(' '))) { Error = Loc.T("E-pošta nije ispravna."); return; }
+
         // A user name needs a password, and the other way round, so nobody is left with half a sign-in
         var hasName = Username.Trim().Length > 0;
         var hasPassword = NewPassword.Length > 0;
