@@ -86,7 +86,7 @@ public sealed class EmailReminderService
 
             try
             {
-                await _mail.SendAsync(person.Email!, ReminderTexts.Subject(due.Items), ReminderTexts.Body(person.Name, due.Items), ct);
+                await _mail.SendAsync(person.Email!, ReminderTexts.Subject(due.Items, person.Language), ReminderTexts.Body(person.Name, due.Items, person.Language), ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

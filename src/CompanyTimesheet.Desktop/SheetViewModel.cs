@@ -46,7 +46,10 @@ public sealed partial class SheetViewModel : ObservableObject
     [ObservableProperty] private string _workflowText = "";
     [ObservableProperty] private string _chainText = "";
 
-    public System.Collections.Generic.IReadOnlyList<string> WeekdayHeaders { get; } = new[] { "Pon", "Uto", "Sri", "Čet", "Pet", "Sub", "Ned" };
+    public System.Collections.Generic.IReadOnlyList<string> WeekdayHeaders => new[] { Loc.T("Pon"), Loc.T("Uto"), Loc.T("Sri"), Loc.T("Čet"), Loc.T("Pet"), Loc.T("Sub"), Loc.T("Ned") };
+
+    /// <summary>The language changed: the headings of the calendar are written again</summary>
+    public void LanguageChanged() => OnPropertyChanged(nameof(WeekdayHeaders));
 
     public bool HasMessages => Messages.Count > 0;
 
@@ -90,21 +93,21 @@ public sealed partial class SheetViewModel : ObservableObject
 
         Carried.Clear();
         foreach (var carried in sheet.CarriedIn ?? Array.Empty<CarriedOvertimeDto>())
-            Carried.Add($"{EmployeeFormat.ShortDate(carried.Date)} {carried.Start:HH\\:mm}–{carried.End:HH\\:mm} iz prethodnog mjeseca: {EmployeeFormat.Hours(carried.MinutesInThisMonth)} se računa u ovom mjesecu");
+            Carried.Add(Loc.F("{0} {1:HH\\:mm}–{2:HH\\:mm} iz prethodnog mjeseca: {3} se računa u ovom mjesecu", EmployeeFormat.ShortDate(carried.Date), carried.Start, carried.End, EmployeeFormat.Hours(carried.MinutesInThisMonth)));
 
         Issues.Clear();
         foreach (var issue in sheet.Issues.OrderByDescending(i => i.Severity == IssueSeverity.Blocking)) Issues.Add(new EmployeeIssueRow(issue));
 
         var summary = sheet.Summary;
         FundOk = summary.FundMinutes >= summary.ExpectedFundMinutes;
-        FundText = $"Mjesečni fond: {EmployeeFormat.Hours(summary.FundMinutes)} od {EmployeeFormat.Hours(summary.ExpectedFundMinutes)}";
-        OvertimeText = $"Prekovremeni rad: {EmployeeFormat.Hours(summary.OvertimeMinutes)}";
+        FundText = Loc.F("Mjesečni fond: {0} od {1}", EmployeeFormat.Hours(summary.FundMinutes), EmployeeFormat.Hours(summary.ExpectedFundMinutes));
+        OvertimeText = Loc.F("Prekovremeni rad: {0}", EmployeeFormat.Hours(summary.OvertimeMinutes));
 
         TotalLines.Clear();
         foreach (var (code, minutes) in summary.MinutesByCode.OrderBy(p => p.Key))
-            TotalLines.Add($"{code} {TimeCodeNames.Bs(code)}: {EmployeeFormat.Hours(minutes)}");
+            TotalLines.Add($"{code} {EmployeeFormat.CodeName(code)}: {EmployeeFormat.Hours(minutes)}");
         foreach (var (code, days) in summary.DaysByCode.Where(p => TimeCodes.Get(p.Key).IsAbsence).OrderBy(p => p.Key))
-            TotalLines.Add($"{code} {TimeCodeNames.Bs(code)}: {days} {(days == 1 ? "dan" : "dana")}");
+            TotalLines.Add(Loc.F("{0} {1}: {2} {3}", code, EmployeeFormat.CodeName(code), days, Loc.T(days == 1 ? "dan" : "dana")));
 
         ShowWorkflow(sheet, own);
         RaiseLists();
@@ -136,14 +139,14 @@ public sealed partial class SheetViewModel : ObservableObject
 
         WorkflowText = sheet.Status switch
         {
-            SheetStatus.Submitted => $"Čeka odobravanje: {workflow.CurrentApproverName} (korak {workflow.Step + 1} od {workflow.Chain.Count}).",
+            SheetStatus.Submitted => Loc.F("Čeka odobravanje: {0} (korak {1} od {2}).", workflow.CurrentApproverName, workflow.Step + 1, workflow.Chain.Count),
             SheetStatus.Returned => own
-                ? "Vraćeno na ispravku. Odgovorite na poruke, ispravite unos i predajte ponovo."
-                : "Vraćeno zaposleniku na ispravku.",
-            SheetStatus.Approved => "Odobreno. Šihtarica je zaključana.",
-            _ => own ? "Još nije predano na odobravanje." : ""
+                ? Loc.T("Vraćeno na ispravku. Odgovorite na poruke, ispravite unos i predajte ponovo.")
+                : Loc.T("Vraćeno zaposleniku na ispravku."),
+            SheetStatus.Approved => Loc.T("Odobreno. Šihtarica je zaključana."),
+            _ => own ? Loc.T("Još nije predano na odobravanje.") : ""
         };
-        ChainText = workflow.Chain.Count == 0 ? "" : "Lanac odobravanja: " + string.Join(" → ", workflow.Chain.Select(c => c.Name));
+        ChainText = workflow.Chain.Count == 0 ? "" : Loc.T("Lanac odobravanja: ") + string.Join(" → ", workflow.Chain.Select(c => c.Name));
 
         var canAnswer = own && sheet.Status == SheetStatus.Returned;
         foreach (var message in workflow.Messages) Messages.Add(new MessageRow(message, canAnswer));

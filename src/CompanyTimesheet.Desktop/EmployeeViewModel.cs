@@ -234,10 +234,12 @@ public partial class EmployeeViewModel : ObservableObject
             {
                 var me = await _client.GetMeAsync();
                 WhoText = $"{me.Name} · {me.Code}";
+                UserName = me.Name;
+                UserCode = me.Code;
                 IsApprover = me.IsApprover;
                 CanExport = me.SheetExport;
                 IsAdmin = me.IsAdmin;
-                ApplyServerAppearance(me.ThemeMode, me.Palette);
+                ApplyServerAppearance(me.ThemeMode, me.Palette, me.Language);
                 await LoadTimeCodesAsync();
             }
 
@@ -272,7 +274,7 @@ public partial class EmployeeViewModel : ObservableObject
         }
         catch (ApiException ex) when (NeedsSignInAgain(ex))
         {
-            ShowSignIn(IsConnected ? "Sesija je istekla. Prijavite se ponovo." : "");
+            ShowSignIn(IsConnected ? Loc.T("Sesija je istekla. Prijavite se ponovo.") : "");
             return false;
         }
         catch (ApiException ex)
@@ -280,9 +282,9 @@ public partial class EmployeeViewModel : ObservableObject
             _logger.LogWarning(ex, "The company server refused or could not be reached ({Code})", ex.Code);
             ErrorText = ex.Code switch
             {
-                "not-registered" => "Vaš račun nije povezan sa zaposlenikom. Obratite se administratoru.",
-                "unauthorized" => "Server nije prihvatio vašu Windows prijavu. Provjerite da ste prijavljeni firmskim računom i da ste u firmskoj mreži.",
-                "unreachable" or "timeout" => "Server firme nije dostupan. Provjerite mrežnu vezu (VPN). " + ex.Message,
+                "not-registered" => Loc.T("Vaš račun nije povezan sa zaposlenikom. Obratite se administratoru."),
+                "unauthorized" => Loc.T("Server nije prihvatio vašu Windows prijavu. Provjerite da ste prijavljeni firmskim računom i da ste u firmskoj mreži."),
+                "unreachable" or "timeout" => Loc.T("Server firme nije dostupan. Provjerite mrežnu vezu (VPN). ") + ex.Message,
                 _ => ex.Message
             };
             if (connecting) IsConnected = false;
@@ -291,7 +293,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Employee mode failed");
-            ErrorText = "Došlo je do greške: " + ex.Message;
+            ErrorText = Loc.T("Došlo je do greške: ") + ex.Message;
             if (connecting) IsConnected = false;
             return false;
         }
@@ -448,7 +450,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (row == null || !IsEditable) return;
 
-        var confirmed = await _dialogs.ConfirmAsync("Obriši prekovremeni rad", $"Obrisati unos {row.Title}?");
+        var confirmed = await _dialogs.ConfirmAsync(Loc.T("Obriši prekovremeni rad"), Loc.F("Obrisati unos {0}?", row.Title));
         if (confirmed) await RunAsync(() => _client.DeleteOvertimeAsync(Year, Month, row.Record.Id));
     }
 
@@ -486,7 +488,7 @@ public partial class EmployeeViewModel : ObservableObject
             InfoText = "";
             var result = await _files.SaveAsync(format, download);
             if (result.Error != null) ErrorText = result.Error;
-            else if (result.Path != null) InfoText = $"Sačuvano: {result.Path}";
+            else if (result.Path != null) InfoText = Loc.F("Sačuvano: {0}", result.Path);
         }
         finally
         {
@@ -500,8 +502,8 @@ public partial class EmployeeViewModel : ObservableObject
     private async Task SubmitAsync()
     {
         if (!CanSubmit) return;
-        var confirmed = await _dialogs.ConfirmAsync("Predaj na odobravanje",
-            $"Nakon predaje je šihtarica za {MonthTitle} zaključana dok je neko od odobravatelja ne vrati. Predati?");
+        var confirmed = await _dialogs.ConfirmAsync(Loc.T("Predaj na odobravanje"),
+            Loc.F("Nakon predaje je šihtarica za {0} zaključana dok je neko od odobravatelja ne vrati. Predati?", MonthTitle));
         if (confirmed) await RunAsync(() => _client.SubmitAsync(Year, Month), refreshPending: true);
     }
 
@@ -510,7 +512,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (row == null || !row.CanAnswer) return;
 
-        var viewModel = new TextPromptViewModel("Odgovor na poruku", "Vaš odgovor", "Pošalji odgovor", $"{row.Header}: {row.Text}");
+        var viewModel = new TextPromptViewModel(Loc.T("Odgovor na poruku"), Loc.T("Vaš odgovor"), Loc.T("Pošalji odgovor"), $"{row.Header}: {row.Text}");
         var answer = await _dialogs.PromptAsync(viewModel);
         if (answer != null) await RunAsync(() => _client.AnswerAsync(Year, Month, row.Message.Index, answer), refreshPending: true);
     }
@@ -572,7 +574,7 @@ public partial class EmployeeViewModel : ObservableObject
         await RunAdminAsync(async () =>
         {
             await _client.AddDeputyAsync(request);
-            InfoText = "Zamjena je postavljena.";
+            InfoText = Loc.T("Zamjena je postavljena.");
             await Deputies.RefreshAsync(_client);
         });
     }
@@ -585,7 +587,7 @@ public partial class EmployeeViewModel : ObservableObject
         await RunAdminAsync(async () =>
         {
             await _client.RemoveDeputyAsync(row.Id);
-            InfoText = "Zamjena je uklonjena.";
+            InfoText = Loc.T("Zamjena je uklonjena.");
             await Deputies.RefreshAsync(_client);
         });
     }
@@ -608,7 +610,7 @@ public partial class EmployeeViewModel : ObservableObject
         CanSubmit = false;
         CanAct = false;
         IsViewingRevision = true;
-        RevisionBanner = $"Prikazana je {row.Title.ToLowerInvariant()}, {row.Detail}. Ovo nije trenutno stanje šihtarice.";
+        RevisionBanner = Loc.F("Prikazana je {0}, {1}. Ovo nije trenutno stanje šihtarice.", row.Title.ToLowerInvariant(), row.Detail);
     }
 
     [RelayCommand]
@@ -640,8 +642,8 @@ public partial class EmployeeViewModel : ObservableObject
     {
         var code = _reviewCode ?? _sheet?.Workflow?.OwnerCode;
         if (!CanAct || code == null) return;
-        var what = _reviewCode == null ? $"svoju šihtaricu za {MonthTitle}" : $"šihtaricu: {ReviewTitle}";
-        var confirmed = await _dialogs.ConfirmAsync("Odobri šihtaricu", $"Odobriti {what}?");
+        var what = _reviewCode == null ? Loc.F("svoju šihtaricu za {0}", MonthTitle) : Loc.F("šihtaricu: {0}", ReviewTitle);
+        var confirmed = await _dialogs.ConfirmAsync(Loc.T("Odobri šihtaricu"), Loc.F("Odobriti {0}?", what));
         if (!confirmed) return;
 
         if (await RunAsync(() => _client.ApproveAsync(code, Year, Month), refreshPending: true)) InfoText = "Odobreno.";
@@ -653,11 +655,11 @@ public partial class EmployeeViewModel : ObservableObject
         if (!CanAct || _reviewCode == null) return;
         var code = _reviewCode;
 
-        var viewModel = new TextPromptViewModel("Vrati na ispravku", "Šta treba ispraviti? (obavezno)", "Vrati zaposleniku");
+        var viewModel = new TextPromptViewModel(Loc.T("Vrati na ispravku"), Loc.T("Šta treba ispraviti? (obavezno)"), Loc.T("Vrati zaposleniku"));
         var message = await _dialogs.PromptAsync(viewModel);
         if (message == null) return;
 
-        if (await RunAsync(() => _client.ReturnAsync(code, Year, Month, message), refreshPending: true)) InfoText = "Šihtarica je vraćena zaposleniku.";
+        if (await RunAsync(() => _client.ReturnAsync(code, Year, Month, message), refreshPending: true)) InfoText = Loc.T("Šihtarica je vraćena zaposleniku.");
     }
 
     // ---- The team --------------------------------------------------------------------------------------------------
@@ -702,7 +704,7 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (Team.SummaryBody.Length == 0) return;
         await _shell.CopyAsync(Team.SummaryBody);
-        InfoText = "Kopirano. Zalijepite u mail.";
+        InfoText = Loc.T("Kopirano. Zalijepite u mail.");
     }
 
     /// <summary>One person of the team: asks them, by name, to submit the month. Their computer shows a notification.</summary>
@@ -717,7 +719,7 @@ public partial class EmployeeViewModel : ObservableObject
             {
                 await _client.RemindAsync(row.Code, Year, Month);
                 row.MarkReminded(DateTime.UtcNow);
-                InfoText = $"Podsjetnik je poslan: {row.Name}.";
+                InfoText = Loc.F("Podsjetnik je poslan: {0}.", row.Name);
             }
             catch (ApiException ex) when (ex.Code is "already-reminded" or "nothing-to-remind" or "not-in-team")
             {
@@ -747,7 +749,7 @@ public partial class EmployeeViewModel : ObservableObject
                 }
             }
 
-            InfoText = sent == 0 ? "Svi koji nisu predali su već podsjećeni." : $"Podsjetnik je poslan: {sent}.";
+            InfoText = sent == 0 ? Loc.T("Svi koji nisu predali su već podsjećeni.") : Loc.F("Podsjetnik je poslan: {0}.", sent);
         });
     }
 
@@ -764,7 +766,7 @@ public partial class EmployeeViewModel : ObservableObject
         }
         catch (ApiException ex) when (NeedsSignInAgain(ex))
         {
-            ShowSignIn("Sesija je istekla. Prijavite se ponovo.");
+            ShowSignIn(Loc.T("Sesija je istekla. Prijavite se ponovo."));
         }
         catch (ApiException ex)
         {
@@ -774,7 +776,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "The team tab failed");
-            ErrorText = "Došlo je do greške: " + ex.Message;
+            ErrorText = Loc.T("Došlo je do greške: ") + ex.Message;
         }
         finally
         {
@@ -821,14 +823,14 @@ public partial class EmployeeViewModel : ObservableObject
                 {
                     // The person exists now: show them, and say what is still missing
                     await Admin.RefreshAsync(_admin);
-                    ErrorText = $"Osoba je dodana ({created.Code}), ali korisničko ime nije postavljeno: {AdminViewModel.Refusal(ex)} Otvorite osobu i pokušajte ponovo.";
+                    ErrorText = Loc.F("Osoba je dodana ({0}), ali korisničko ime nije postavljeno: {1} Otvorite osobu i pokušajte ponovo.", created.Code, AdminViewModel.Refusal(ex));
                     return;
                 }
             }
 
             InfoText = result.SetCredentials == null
-                ? $"Dodano: {created.Name} ({created.Code}). Korisničko ime još nije postavljeno."
-                : $"Dodano: {created.Name} ({created.Code}).";
+                ? Loc.F("Dodano: {0} ({1}). Korisničko ime još nije postavljeno.", created.Name, created.Code)
+                : Loc.F("Dodano: {0} ({1}).", created.Name, created.Code);
             await Admin.RefreshAsync(_admin);
         });
     }
@@ -846,13 +848,13 @@ public partial class EmployeeViewModel : ObservableObject
             if (result.RemoveCredentials)
             {
                 await _admin.RemoveCredentialsAsync(row.Code);
-                InfoText = $"Korisničko ime je uklonjeno: {row.Name}.";
+                InfoText = Loc.F("Korisničko ime je uklonjeno: {0}.", row.Name);
             }
             else
             {
                 await _admin.UpdateEmployeeAsync(row.Code, result.Update);
                 if (result.SetCredentials != null) await _admin.SetCredentialsAsync(row.Code, result.SetCredentials);
-                InfoText = $"Sačuvano: {row.Name}.";
+                InfoText = Loc.F("Sačuvano: {0}.", row.Name);
             }
 
             await Admin.RefreshAsync(_admin);
@@ -872,15 +874,15 @@ public partial class EmployeeViewModel : ObservableObject
             var good = preview.Rows.Count(r => r.Errors.Count == 0);
             if (good == 0)
             {
-                ErrorText = preview.Rows.Count == 0 ? "U datoteci nema redova." : $"Nijedan red nije ispravan ({preview.ErrorCount} grešaka). Provjerite datoteku.";
+                ErrorText = preview.Rows.Count == 0 ? Loc.T("U datoteci nema redova.") : Loc.F("Nijedan red nije ispravan ({0} grešaka). Provjerite datoteku.", preview.ErrorCount);
                 return;
             }
 
-            var question = $"Uvesti {good} od {preview.Rows.Count} redova? Redovi s greškom ({preview.Rows.Count - good}) se preskaču, upozorenja: {preview.WarningCount}.";
-            if (!await _dialogs.ConfirmAsync("Uvoz liste radnika", question)) return;
+            var question = Loc.F("Uvesti {0} od {1} redova? Redovi s greškom ({2}) se preskaču, upozorenja: {3}.", good, preview.Rows.Count, preview.Rows.Count - good, preview.WarningCount);
+            if (!await _dialogs.ConfirmAsync(Loc.T("Uvoz liste radnika"), question)) return;
 
             var result = await _admin.ImportAsync(csv);
-            InfoText = $"Dodano: {result.Created}, ažurirano: {result.Updated}, preskočeno: {result.Skipped}.";
+            InfoText = Loc.F("Dodano: {0}, ažurirano: {1}, preskočeno: {2}.", result.Created, result.Updated, result.Skipped);
             await Admin.RefreshAsync(_admin);
         });
     }
@@ -889,8 +891,8 @@ public partial class EmployeeViewModel : ObservableObject
     private Task VerifyAuditAsync() => RunAdminAsync(async () =>
     {
         var result = await _admin.VerifyAuditAsync();
-        if (result.IsIntact) InfoText = $"Revizijski dnevnik je u redu ({result.Checked} zapisa).";
-        else ErrorText = $"Revizijski dnevnik je mijenjan mimo aplikacije. Prvi sporni zapis: {result.FirstBrokenId}.";
+        if (result.IsIntact) InfoText = Loc.F("Revizijski dnevnik je u redu ({0} zapisa).", result.Checked);
+        else ErrorText = Loc.F("Revizijski dnevnik je mijenjan mimo aplikacije. Prvi sporni zapis: {0}.", result.FirstBrokenId);
     });
 
     private async Task RunAdminAsync(Func<Task> action)
@@ -905,7 +907,7 @@ public partial class EmployeeViewModel : ObservableObject
         }
         catch (ApiException ex) when (NeedsSignInAgain(ex))
         {
-            ShowSignIn("Sesija je istekla. Prijavite se ponovo.");
+            ShowSignIn(Loc.T("Sesija je istekla. Prijavite se ponovo."));
         }
         catch (ApiException ex)
         {
@@ -915,7 +917,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "The administrator's tab failed");
-            ErrorText = "Došlo je do greške: " + ex.Message;
+            ErrorText = Loc.T("Došlo je do greške: ") + ex.Message;
         }
         finally
         {
@@ -939,7 +941,7 @@ public partial class EmployeeViewModel : ObservableObject
             switch (outcome.Status)
             {
                 case UpdateCheckStatus.Failed:
-                    ErrorText = "Provjera ažuriranja nije uspjela: " + outcome.Message;
+                    ErrorText = Loc.T("Provjera ažuriranja nije uspjela: ") + outcome.Message;
                     break;
                 case UpdateCheckStatus.UpToDate:
                     InfoText = outcome.Message;
@@ -949,7 +951,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "The check for updates failed");
-            ErrorText = "Provjera ažuriranja nije uspjela: " + ex.Message;
+            ErrorText = Loc.T("Provjera ažuriranja nije uspjela: ") + ex.Message;
         }
         finally
         {
@@ -1015,11 +1017,11 @@ public partial class EmployeeViewModel : ObservableObject
         }
         catch (ArgumentException)
         {
-            LoginError = "Adresa servera nije ispravna. Primjer: https://server.firma.ba ili http://localhost:5090";
+            LoginError = Loc.T("Adresa servera nije ispravna. Primjer: https://server.firma.ba ili http://localhost:5090");
         }
         catch (InvalidOperationException)
         {
-            LoginError = "Adresa mora počinjati sa https:// (http je dozvoljen samo za ovaj računar).";
+            LoginError = Loc.T("Adresa mora počinjati sa https:// (http je dozvoljen samo za ovaj računar).");
         }
 
         return false;
@@ -1038,6 +1040,8 @@ public partial class EmployeeViewModel : ObservableObject
         Admin.Clear();
         Deputies.Clear();
         WhoText = "";
+        UserName = "";
+        UserCode = "";
         IsApprover = false;
         IsAdmin = false;
         CanExport = false;
@@ -1062,7 +1066,7 @@ public partial class EmployeeViewModel : ObservableObject
         LoginError = "";
         if (LoginUsername.Trim().Length == 0 || LoginPassword.Length == 0)
         {
-            LoginError = "Unesite korisničko ime i lozinku.";
+            LoginError = Loc.T("Unesite korisničko ime i lozinku.");
             return;
         }
 
@@ -1093,7 +1097,7 @@ public partial class EmployeeViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Sign-in failed");
-            LoginError = "Prijava nije uspjela: " + ex.Message;
+            LoginError = Loc.T("Prijava nije uspjela: ") + ex.Message;
         }
         finally
         {
@@ -1108,8 +1112,8 @@ public partial class EmployeeViewModel : ObservableObject
     {
         if (IsBusy) return;
         LoginError = "";
-        if (NewPassword.Length < 10) { LoginError = "Lozinka mora imati najmanje 10 znakova."; return; }
-        if (NewPassword != NewPasswordAgain) { LoginError = "Lozinke se ne podudaraju."; return; }
+        if (NewPassword.Length < 10) { LoginError = Loc.T("Lozinka mora imati najmanje 10 znakova."); return; }
+        if (NewPassword != NewPasswordAgain) { LoginError = Loc.T("Lozinke se ne podudaraju."); return; }
 
         var changed = false;
         try
@@ -1147,12 +1151,12 @@ public partial class EmployeeViewModel : ObservableObject
 
     private static string SignInRefusal(ApiException ex) => ex.Code switch
     {
-        "invalid-credentials" => "Pogrešno korisničko ime ili lozinka.",
-        "locked" => "Račun je privremeno zaključan zbog previše pogrešnih lozinki. Pokušajte kasnije ili se obratite administratoru.",
-        "weak-password" => "Lozinka je preslaba: najmanje 10 znakova i različita od korisničkog imena.",
-        "same-password" => "Izaberite lozinku različitu od trenutne.",
-        "wrong-password" => "Trenutna lozinka nije tačna.",
-        "unreachable" or "timeout" => "Server nije dostupan. Provjerite adresu servera i mrežnu vezu (VPN).",
+        "invalid-credentials" => Loc.T("Pogrešno korisničko ime ili lozinka."),
+        "locked" => Loc.T("Račun je privremeno zaključan zbog previše pogrešnih lozinki. Pokušajte kasnije ili se obratite administratoru."),
+        "weak-password" => Loc.T("Lozinka je preslaba: najmanje 10 znakova i različita od korisničkog imena."),
+        "same-password" => Loc.T("Izaberite lozinku različitu od trenutne."),
+        "wrong-password" => Loc.T("Trenutna lozinka nije tačna."),
+        "unreachable" or "timeout" => Loc.T("Server nije dostupan. Provjerite adresu servera i mrežnu vezu (VPN)."),
         _ => ex.Message
     };
 

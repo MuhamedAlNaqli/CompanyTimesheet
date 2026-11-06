@@ -25,10 +25,10 @@ public sealed class TeamRow : ObservableObject
 
         (StatusText, StatusBrush) = member.Status switch
         {
-            SheetStatus.Approved => ("Odobreno", Brush.Parse("#15803D")),
-            SheetStatus.Submitted => (member.WaitingForName is { Length: > 0 } ? $"Predano, čeka: {member.WaitingForName}" : "Predano", Brush.Parse("#1D4ED8")),
-            SheetStatus.Returned => ("Vraćeno na ispravku", Brush.Parse("#B45309")),
-            _ => ("Nije predano", Brush.Parse("#B91C1C"))
+            SheetStatus.Approved => (Loc.T("Odobreno"), Brush.Parse("#15803D")),
+            SheetStatus.Submitted => (member.WaitingForName is { Length: > 0 } ? Loc.F("Predano, čeka: {0}", member.WaitingForName) : Loc.T("Predano"), Brush.Parse("#1D4ED8")),
+            SheetStatus.Returned => (Loc.T("Vraćeno na ispravku"), Brush.Parse("#B45309")),
+            _ => (Loc.T("Nije predano"), Brush.Parse("#B91C1C"))
         };
     }
 
@@ -53,7 +53,7 @@ public sealed class TeamRow : ObservableObject
 
     public bool HasReminder => _remindedUtc != null;
 
-    public string ReminderText => _remindedUtc is { } at ? $"Podsjetnik poslan {at.ToLocalTime():dd.MM. u HH:mm}" : "";
+    public string ReminderText => _remindedUtc is { } at ? Loc.F("Podsjetnik poslan {0:dd.MM. u HH:mm}", at.ToLocalTime()) : "";
 
     public void MarkReminded(DateTime sentUtc)
     {
@@ -94,7 +94,7 @@ public sealed partial class TeamViewModel : ObservableObject
         SummaryBody = summary.Text;
 
         var open = summary.Groups.SelectMany(g => g.People).Where(p => p.Note != null).Select(p => p.Name).ToList();
-        SummaryNote = open.Count == 0 ? "" : $"Još nisu odobrene šihtarice: {string.Join(", ", open)}.";
+        SummaryNote = open.Count == 0 ? "" : Loc.F("Još nisu odobrene šihtarice: {0}.", string.Join(", ", open));
     }
 
     public bool IsEmpty => Rows.Count == 0;
@@ -132,8 +132,8 @@ public sealed partial class TeamViewModel : ObservableObject
 
         var open = status.Members.Count(m => m.Status is SheetStatus.Draft or SheetStatus.Returned);
         SummaryText = open == 0
-            ? $"Sve šihtarice ({status.Members.Count}) su predane."
-            : $"Nisu predali: {open} od {status.Members.Count}. Rok za predaju je {EmployeeFormat.Date(status.Deadline)}";
+            ? Loc.F("Sve šihtarice ({0}) su predane.", status.Members.Count)
+            : Loc.F("Nisu predali: {0} od {1}. Rok za predaju je {2}", open, status.Members.Count, EmployeeFormat.Date(status.Deadline));
         HasPeopleToRemind = status.Members.Any(m => m.CanRemind);
         OnPropertyChanged(nameof(IsEmpty));
     }
@@ -141,9 +141,9 @@ public sealed partial class TeamViewModel : ObservableObject
     /// <summary>The text for a refusal to remind, in the words of the person using the app</summary>
     public static string ReminderRefusal(ApiException ex, string name) => ex.Code switch
     {
-        "already-reminded" => $"Podsjetnik za {name} je već poslan. Pokušajte kasnije.",
-        "nothing-to-remind" => $"Za {name} nema šta podsjećati: šihtarica je predana ili mjesec još nije počeo.",
-        "not-in-team" => $"{name} se ne javlja vama.",
+        "already-reminded" => Loc.F("Podsjetnik za {0} je već poslan. Pokušajte kasnije.", name),
+        "nothing-to-remind" => Loc.F("Za {0} nema šta podsjećati: šihtarica je predana ili mjesec još nije počeo.", name),
+        "not-in-team" => Loc.F("{0} se ne javlja vama.", name),
         _ => ex.Message
     };
 }

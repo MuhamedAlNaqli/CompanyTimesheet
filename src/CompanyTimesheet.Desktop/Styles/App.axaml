@@ -387,6 +387,23 @@
         <Setter Property="Foreground" Value="{DynamicResource AppOnAccent}"/>
     </Style>
 
+    <!-- Cells of the calendar view: the colours follow the theme -->
+    <Style Selector="Border.cal-cell">
+        <Setter Property="Background" Value="{DynamicResource AppSurface}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.cal-cell.weekend">
+        <Setter Property="Background" Value="{DynamicResource AppWeekendBg}"/>
+    </Style>
+    <Style Selector="Border.cal-cell.holiday">
+        <Setter Property="Background" Value="{DynamicResource AppHolidayBg}"/>
+    </Style>
+    <Style Selector="Border.cal-cell.today">
+        <Setter Property="BorderBrush" Value="{DynamicResource AppAccent}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
     <!-- Week view -->
     <Style Selector="Border.day-column">
         <Setter Property="Background" Value="{DynamicResource AppSurface}"/>

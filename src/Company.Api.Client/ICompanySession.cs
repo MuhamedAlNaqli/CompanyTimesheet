@@ -10,6 +10,9 @@ public interface ICompanySession
 
     bool HasToken { get; }
 
+    /// <summary>The language the server writes its messages in (the findings of the rules): "bs" or "en"</summary>
+    void UseLanguage(string language);
+
     /// <summary>Points the client at another server; throws when the text is not an address, or plain http is used for another computer</summary>
     void UseServer(string address);
 

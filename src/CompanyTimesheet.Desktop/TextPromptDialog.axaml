@@ -14,7 +14,7 @@
         </StackPanel>
         <TextBlock Name="PromptError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-            <Button Name="PromptCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="Odustani"/></Button>
+            <Button Name="PromptCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="{em:Tr 'Odustani'}"/></Button>
             <Button Name="PromptOkButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="{Binding ConfirmText}"/></Button>
         </StackPanel>
     </StackPanel>

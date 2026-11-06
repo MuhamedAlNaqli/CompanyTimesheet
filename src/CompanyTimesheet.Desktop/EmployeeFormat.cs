@@ -18,18 +18,24 @@ public static class EmployeeFormat
     public static readonly string[] WeekdayNames =
         { "nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota" };
 
-    public static string Month(int year, int month) => BosnianTexts.Month(year, month);
+    public static string Month(int year, int month) =>
+        Loc.IsEnglish ? $"{Loc.T(BosnianTexts.MonthNames[month - 1])} {year}" : BosnianTexts.Month(year, month);
 
-    public static string Date(DateOnly date) => date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture);
+    /// <summary>The name of a code in the language of the interface</summary>
+    public static string CodeName(int code) => Loc.IsEnglish ? TimeCodeNames.En(code) : TimeCodeNames.Bs(code);
 
-    public static string ShortDate(DateOnly date) => date.ToString("dd.MM.", CultureInfo.InvariantCulture);
+    public static string Skipped(SkippedBecause reason) => Loc.T(BosnianTexts.SkippedBecause(reason));
 
-    public static string Weekday(DateOnly date) => WeekdayNames[(int)date.DayOfWeek];
+    public static string Date(DateOnly date) => date.ToString(Loc.IsEnglish ? "dd/MM/yyyy" : "dd.MM.yyyy.", CultureInfo.InvariantCulture);
+
+    public static string ShortDate(DateOnly date) => date.ToString(Loc.IsEnglish ? "dd/MM" : "dd.MM.", CultureInfo.InvariantCulture);
+
+    public static string Weekday(DateOnly date) => Loc.T(WeekdayNames[(int)date.DayOfWeek]);
 
     /// <summary>"8 h", "2,5 h", "0,5 h"</summary>
-    public static string Hours(int minutes) => (minutes / 60m).ToString("0.##", Bosnian) + " h";
+    public static string Hours(int minutes) => (minutes / 60m).ToString("0.##", Loc.Culture) + " h";
 
-    public static string Status(SheetStatus status) => BosnianTexts.Status(status);
+    public static string Status(SheetStatus status) => Loc.T(BosnianTexts.Status(status));
 
     /// <summary>The title and the text of one due item, in the words of the employee</summary>
     public static (string Title, string Message) Reminder(ReminderDto item)
@@ -38,12 +44,12 @@ public static class EmployeeFormat
         var deadline = Date(item.Deadline);
         return item.Kind switch
         {
-            ReminderType.SubmitSoon => ("Predajte šihtaricu", $"Šihtarica za {month} se predaje do {deadline}"),
-            ReminderType.SubmitOverdue => ("Šihtarica kasni", $"Šihtarica za {month} je trebala biti predana do {deadline}"),
-            ReminderType.FixReturned => ("Šihtarica je vraćena na ispravku", $"Šihtarica za {month} je vraćena. Pročitajte poruku, ispravite unos i predajte je ponovo."),
-            ReminderType.Nudged => ($"Podsjetnik: {item.From}", $"{item.From} vas podsjeća da predate šihtaricu za {month}. Rok je {deadline}"),
-            ReminderType.ApproveWaiting => ("Šihtarice čekaju odobrenje", $"Broj šihtarica koje čekaju vaše odobrenje: {item.Count}. Rok je {deadline}"),
-            ReminderType.ApproveOverdue => ("Odobravanje kasni", $"Broj šihtarica koje čekaju vaše odobrenje: {item.Count}. Rok je bio {deadline}"),
+            ReminderType.SubmitSoon => (Loc.T("Predajte šihtaricu"), $"Šihtarica za {month} se predaje do {deadline}"),
+            ReminderType.SubmitOverdue => (Loc.T("Šihtarica kasni"), Loc.F("Šihtarica za {0} je trebala biti predana do {1}", month, deadline)),
+            ReminderType.FixReturned => (Loc.T("Šihtarica je vraćena na ispravku"), Loc.F("Šihtarica za {0} je vraćena. Pročitajte poruku, ispravite unos i predajte je ponovo.", month)),
+            ReminderType.Nudged => (Loc.F("Podsjetnik: {0}", item.From), Loc.F("{0} vas podsjeća da predate šihtaricu za {1}. Rok je {2}", item.From, month, deadline)),
+            ReminderType.ApproveWaiting => (Loc.T("Šihtarice čekaju odobrenje"), Loc.F("Broj šihtarica koje čekaju vaše odobrenje: {0}. Rok je {1}", item.Count, deadline)),
+            ReminderType.ApproveOverdue => (Loc.T("Odobravanje kasni"), Loc.F("Broj šihtarica koje čekaju vaše odobrenje: {0}. Rok je bio {1}", item.Count, deadline)),
             _ => (item.Kind.ToString(), month)
         };
     }
@@ -60,14 +66,14 @@ public static class EmployeeFormat
         _ => 9
     };
 
-    public static string HistoryKind(HistoryKind kind) => BosnianTexts.History(kind);
+    public static string HistoryKind(HistoryKind kind) => Loc.T(BosnianTexts.History(kind));
 
-    public static string DayType(DayKind type) => BosnianTexts.DayKind(type);
+    public static string DayType(DayKind type) => Loc.T(BosnianTexts.DayKind(type));
 
     public static string Entry(EntryDto entry)
     {
         var code = TimeCodes.Get(entry.Code);
-        return code.Unit == CodeUnit.Hours ? $"{code.Code} {TimeCodeNames.Bs(code.Code)}: {Hours(entry.Minutes)}" : $"{code.Code} {TimeCodeNames.Bs(code.Code)}";
+        return code.Unit == CodeUnit.Hours ? $"{code.Code} {CodeName(code.Code)}: {Hours(entry.Minutes)}" : $"{code.Code} {CodeName(code.Code)}";
     }
 
     /// <summary>

@@ -64,6 +64,9 @@ Redom su; svaki se oslanja na prethodni. Uz svaki piše šta treba vidjeti.
 ### H. Ažuriranja
 - Bočna traka (lijevo, na svim prozorima): *Provjeri ažuriranja*, *Odjava* i *Izgled*. Dugme s tri crte skuplja traku u ikone, a izbor se pamti.
 - *Izgled*: svijetla, tamna ili tema Windowsa, i paleta (Zelena, Logosoft crveno-siva, Plava, Grafit). Izbor je po osobi i čuva se na serveru: odjavite se, prijavite se na drugom računaru i izgled je isti. Prijavni prozor koristi ono što je ovaj računar zadnje pamtio.
+- *Jezik* (bosanski ili engleski): sve se prebacuje odmah, bez ponovnog pokretanja, a izbor se čuva po osobi na serveru (poruke provjere unosa i mailovi podsjetnika stižu na izabranom jeziku). Štampani listovi ostaju na bosanskom.
+- Dno bočne trake pokazuje ko je prijavljen (inicijali, ime i šifra); dugme s tri crte skuplja traku na inicijale.
+- Poslije nadogradnje program se sam ponovo pokrene (nakon što se instalacija završi). Ako odbijete UAC prozor, program se vraća u staroj verziji.
 - Provjera ažuriranja: "Imate najnoviju verziju (…)" ili prozor za nadogradnju kad postoji novije izdanje.
 
 ## 3. Šta prijaviti

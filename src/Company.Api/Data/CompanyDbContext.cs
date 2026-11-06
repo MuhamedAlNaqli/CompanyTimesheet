@@ -57,6 +57,7 @@ public class CompanyDbContext : DbContext
             e.Property(x => x.Email).HasMaxLength(200);
             e.Property(x => x.ThemeMode).HasMaxLength(10);
             e.Property(x => x.Palette).HasMaxLength(20);
+            e.Property(x => x.Language).HasMaxLength(5);
             e.HasMany(x => x.Accounts).WithOne().HasForeignKey(a => a.EmployeeCode).HasPrincipalKey(x => x.Code).OnDelete(DeleteBehavior.Cascade);
         });
 

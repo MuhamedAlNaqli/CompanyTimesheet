@@ -8,54 +8,54 @@
         <StackPanel Margin="28,24" Spacing="12">
             <TextBlock Name="AdminDialogTitle" Text="{Binding Title}" Classes="title"/>
 
-            <TextBlock Text="Šifra (ostavite prazno da se dodijeli sljedeća slobodna)" Classes="label" IsVisible="{Binding IsNew}"/>
-            <TextBox Name="AdminCode" Classes="form" Text="{Binding Code}" Watermark="npr. Z-007" IsVisible="{Binding IsNew}"/>
+            <TextBlock Text="{em:Tr 'Šifra (ostavite prazno da se dodijeli sljedeća slobodna)'}" Classes="label" IsVisible="{Binding IsNew}"/>
+            <TextBox Name="AdminCode" Classes="form" Text="{Binding Code}" Watermark="{em:Tr 'npr. Z-007'}" IsVisible="{Binding IsNew}"/>
 
-            <TextBlock Text="Ime i prezime" Classes="label"/>
+            <TextBlock Text="{em:Tr 'Ime i prezime'}" Classes="label"/>
             <TextBox Name="AdminName" Classes="form" Text="{Binding Name}"/>
 
-            <TextBlock Text="E-pošta (za podsjetnike, nije obavezna)" Classes="label"/>
+            <TextBlock Text="{em:Tr 'E-pošta (za podsjetnike, nije obavezna)'}" Classes="label"/>
             <TextBox Name="AdminEmail" Classes="form" Text="{Binding Email}"/>
 
             <StackPanel Orientation="Horizontal" Spacing="24">
-                <CheckBox Name="AdminActive" IsChecked="{Binding IsActive}" Content="Aktivan" IsVisible="{Binding IsExisting}"/>
-                <CheckBox Name="AdminIsAdmin" IsChecked="{Binding IsAdmin}" Content="Administrator"/>
+                <CheckBox Name="AdminActive" IsChecked="{Binding IsActive}" Content="{em:Tr 'Aktivan'}" IsVisible="{Binding IsExisting}"/>
+                <CheckBox Name="AdminIsAdmin" IsChecked="{Binding IsAdmin}" Content="{em:Tr 'Administrator'}"/>
             </StackPanel>
 
-            <TextBlock Text="Nadređeni" Classes="label"/>
+            <TextBlock Text="{em:Tr 'Nadređeni'}" Classes="label"/>
             <ComboBox Name="AdminSupervisor" ItemsSource="{Binding People}" SelectedItem="{Binding Supervisor}" HorizontalAlignment="Stretch"/>
 
-            <TextBlock Text="Određeni odobravatelj (ako nema nadređenog)" Classes="label" IsVisible="{Binding IsExisting}"/>
+            <TextBlock Text="{em:Tr 'Određeni odobravatelj (ako nema nadređenog)'}" Classes="label" IsVisible="{Binding IsExisting}"/>
             <ComboBox Name="AdminDesignated" ItemsSource="{Binding People}" SelectedItem="{Binding Designated}" HorizontalAlignment="Stretch" IsVisible="{Binding IsExisting}"/>
 
             <StackPanel Orientation="Horizontal" Spacing="16">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Zaposlen od" Classes="label"/>
+                    <TextBlock Text="{em:Tr 'Zaposlen od'}" Classes="label"/>
                     <CalendarDatePicker Name="AdminActiveFrom" SelectedDate="{Binding ActiveFrom}"/>
                 </StackPanel>
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Zaposlen do" Classes="label"/>
+                    <TextBlock Text="{em:Tr 'Zaposlen do'}" Classes="label"/>
                     <CalendarDatePicker Name="AdminActiveTo" SelectedDate="{Binding ActiveTo}"/>
                 </StackPanel>
             </StackPanel>
 
             <Border Height="1" Background="{DynamicResource AppBorder}" Margin="0,6"/>
-            <TextBlock Text="Prijava" FontWeight="SemiBold"/>
-            <TextBlock Text="Korisničko ime i lozinka kojima se osoba prijavljuje. Prvu lozinku osoba mijenja pri prvoj prijavi." TextWrapping="Wrap"
+            <TextBlock Text="{em:Tr 'Prijava'}" FontWeight="SemiBold"/>
+            <TextBlock Text="{em:Tr 'Korisničko ime i lozinka kojima se osoba prijavljuje. Prvu lozinku osoba mijenja pri prvoj prijavi.'}" TextWrapping="Wrap"
                        FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-            <TextBlock Text="Korisničko ime" Classes="label"/>
+            <TextBlock Text="{em:Tr 'Korisničko ime'}" Classes="label"/>
             <TextBox Name="AdminUsername" Classes="form" Text="{Binding Username}"/>
-            <TextBlock Text="Nova lozinka (ostavite prazno da se ne mijenja)" Classes="label"/>
+            <TextBlock Text="{em:Tr 'Nova lozinka (ostavite prazno da se ne mijenja)'}" Classes="label"/>
             <TextBox Name="AdminNewPassword" Classes="form" Text="{Binding NewPassword}" PasswordChar="●"/>
-            <CheckBox Name="AdminMustChange" IsChecked="{Binding MustChange}" Content="Osoba mora izabrati svoju lozinku pri prvoj prijavi"/>
+            <CheckBox Name="AdminMustChange" IsChecked="{Binding MustChange}" Content="{em:Tr 'Osoba mora izabrati svoju lozinku pri prvoj prijavi'}"/>
 
             <TextBlock Name="AdminError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
                 <Button Name="AdminRemoveUsernameButton" Command="{Binding RemoveUsernameCommand}" IsVisible="{Binding HasCredentials}" Classes="dialog secondary">
-                    <TextBlock Text="Ukloni korisničko ime"/>
+                    <TextBlock Text="{em:Tr 'Ukloni korisničko ime'}"/>
                 </Button>
-                <Button Name="AdminCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="Odustani"/></Button>
-                <Button Name="AdminSaveButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="Sačuvaj"/></Button>
+                <Button Name="AdminCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="{em:Tr 'Odustani'}"/></Button>
+                <Button Name="AdminSaveButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="{em:Tr 'Sačuvaj'}"/></Button>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

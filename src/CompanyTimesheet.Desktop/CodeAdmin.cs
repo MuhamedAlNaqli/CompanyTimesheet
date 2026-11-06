@@ -13,26 +13,26 @@ public static class CodeKinds
 {
     public static string ColourText(string colour) => colour switch
     {
-        "Green" => "Zeleno: redovan rad i odsustva (u fondu sati)",
-        "Blue" => "Plavo: državni praznik (u fondu sati)",
-        "Orange" => "Narandžasto: rad praznikom i noćni rad (u fondu sati)",
-        "Red" => "Crveno: prekovremeni rad (nije u fondu sati)",
+        "Green" => Loc.T("Zeleno: redovan rad i odsustva (u fondu sati)"),
+        "Blue" => Loc.T("Plavo: državni praznik (u fondu sati)"),
+        "Orange" => Loc.T("Narandžasto: rad praznikom i noćni rad (u fondu sati)"),
+        "Red" => Loc.T("Crveno: prekovremeni rad (nije u fondu sati)"),
         _ => colour
     };
 
     public static string ColourShort(string colour) => colour switch
     {
-        "Green" => "Zeleno",
-        "Blue" => "Plavo",
-        "Orange" => "Narandžasto",
-        "Red" => "Crveno",
+        "Green" => Loc.T("Zeleno"),
+        "Blue" => Loc.T("Plavo"),
+        "Orange" => Loc.T("Narandžasto"),
+        "Red" => Loc.T("Crveno"),
         _ => colour
     };
 
     public static string UnitText(string unit) => unit switch
     {
-        "Hours" => "Upisuju se sati",
-        "Day" => "Upisuje se cijeli dan (računa se kao 8 h)",
+        "Hours" => Loc.T("Upisuju se sati"),
+        "Day" => Loc.T("Upisuje se cijeli dan (računa se kao 8 h)"),
         _ => unit
     };
 
@@ -55,10 +55,10 @@ public sealed class CodeRow
         Code = definition.Code;
         Name = definition.NameBs;
         ColourShort = CodeKinds.ColourShort(definition.Colour);
-        UnitShort = definition.Unit == "Day" ? "Cijeli dan" : "Sati";
+        UnitShort = definition.Unit == "Day" ? Loc.T("Cijeli dan") : Loc.T("Sati");
         ColourBrush = CodeKinds.ColourBrush(definition.Colour);
-        StatusText = definition.IsActive ? "Aktivna" : "Isključena";
-        OriginText = definition.IsSystem ? "Sistemska" : "Dodana";
+        StatusText = definition.IsActive ? Loc.T("Aktivna") : Loc.T("Isključena");
+        OriginText = definition.IsSystem ? Loc.T("Sistemska") : "Dodana";
         SearchKey = $"{definition.Code} {definition.NameBs} {definition.NameEn}".ToLowerInvariant();
     }
 
@@ -98,7 +98,7 @@ public sealed partial class CodeEditViewModel : ObservableObject, IDialogResult<
     {
         _definition = definition;
         IsNew = definition == null;
-        Title = IsNew ? "Nova šifra" : $"Šifra {definition!.Code}";
+        Title = IsNew ? Loc.T("Nova šifra") : $"Šifra {definition!.Code}";
 
         // A new code cannot be overtime: the program works overtime out from the intervals. The overtime codes that exist can be renamed.
         var colours = new[] { "Green", "Blue", "Orange" }.Concat(definition?.Colour == "Red" ? new[] { "Red" } : Array.Empty<string>());
@@ -115,11 +115,11 @@ public sealed partial class CodeEditViewModel : ObservableObject, IDialogResult<
         CanChangeMeaning = IsNew || (!definition!.IsSystem && !definition.InUse);
         CanSwitchOff = IsNew || !definition!.IsSystem;
         Note = IsNew
-            ? "Šifra je broj od 1000 do 9999 koji još ne postoji. Boja i vrsta unosa određuju kako se šifra računa u fondu sati i ne mogu se mijenjati kad je neka šihtarica već upotrijebi."
+            ? Loc.T("Šifra je broj od 1000 do 9999 koji još ne postoji. Boja i vrsta unosa određuju kako se šifra računa u fondu sati i ne mogu se mijenjati kad je neka šihtarica već upotrijebi.")
             : definition!.IsSystem
-                ? "Ovu šifru program koristi u svojim pravilima: može se preimenovati, ali ne i isključiti ni promijeniti joj značenje."
+                ? Loc.T("Ovu šifru program koristi u svojim pravilima: može se preimenovati, ali ne i isključiti ni promijeniti joj značenje.")
                 : definition.InUse
-                    ? "Šihtarice već koriste ovu šifru, pa joj se ne mogu mijenjati boja i vrsta unosa. Možete je preimenovati ili isključiti; stari unosi ostaju."
+                    ? Loc.T("Šihtarice već koriste ovu šifru, pa joj se ne mogu mijenjati boja i vrsta unosa. Možete je preimenovati ili isključiti; stari unosi ostaju.")
                     : "";
     }
 
@@ -160,14 +160,14 @@ public sealed partial class CodeEditViewModel : ObservableObject, IDialogResult<
         int code;
         if (IsNew)
         {
-            if (!int.TryParse(CodeText.Trim(), out code) || code < 1000 || code > 9999) { Error = "Šifra je broj od 1000 do 9999."; return; }
+            if (!int.TryParse(CodeText.Trim(), out code) || code < 1000 || code > 9999) { Error = Loc.T("Šifra je broj od 1000 do 9999."); return; }
         }
         else
         {
             code = _definition!.Code;
         }
 
-        if (string.IsNullOrWhiteSpace(NameBs)) { Error = "Naziv ne smije biti prazan."; return; }
+        if (string.IsNullOrWhiteSpace(NameBs)) { Error = Loc.T("Naziv ne smije biti prazan."); return; }
 
         Result = new SaveCodeRequest(code, NameBs.Trim(), NameEn.Trim(), Colour!.Value, Unit!.Value, IsActive);
         RequestClose?.Invoke();

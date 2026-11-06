@@ -226,6 +226,10 @@ namespace Company.Api.Data.Migrations
                     b.Property<bool>("IsFinance")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Language")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)

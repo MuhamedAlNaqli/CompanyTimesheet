@@ -16,11 +16,13 @@ public sealed class SheetDtoBuilder
     private readonly CompanyDbContext _db;
     private readonly Dictionary<int, WorkCalendar> _calendars = new();
     private readonly DeputyService _deputies;
+    private readonly IHttpContextAccessor? _http;
 
-    public SheetDtoBuilder(CompanyDbContext db, DeputyService deputies)
+    public SheetDtoBuilder(CompanyDbContext db, DeputyService deputies, IHttpContextAccessor? http = null)
     {
         _db = db;
         _deputies = deputies;
+        _http = http;
     }
 
     public static bool IsEditable(MonthSheet sheet) => sheet.Status is TimesheetStatus.Draft or TimesheetStatus.Returned;
@@ -106,7 +108,7 @@ public sealed class SheetDtoBuilder
             IsEditable(sheet) && Same(viewer ?? sheet.EmployeeCode, sheet.EmployeeCode),
             days, overtime,
             new SummaryDto(summary.MinutesByCode, summary.DaysByCode, summary.FundMinutes, expected, summary.OvertimeMinutes),
-            issues.Select(i => new IssueDto(i.RuleId, i.Severity.ToDto(), i.Date, ValidationTexts.Message(i))).ToList(),
+            issues.Select(i => new IssueDto(i.RuleId, i.Severity.ToDto(), i.Date, ValidationTexts.Message(i, RequestLanguage.Of(_http?.HttpContext)))).ToList(),
             await WorkflowOfAsync(sheet, viewer ?? sheet.EmployeeCode, issues.Any(i => i.Severity == Severity.Blocking)),
             carriedIn);
     }

@@ -12,6 +12,26 @@ using Timesheet.Domain;
 
 namespace CompanyTimesheet.Desktop;
 
+/// <summary>A language on the side bar</summary>
+public sealed partial class LanguageOption : ObservableObject
+{
+    public LanguageOption(string key, string name, bool selected, Action<string> select)
+    {
+        Key = key;
+        Name = name;
+        _isSelected = selected;
+        SelectCommand = new RelayCommand(() => select(key));
+    }
+
+    public string Key { get; }
+
+    public string Name { get; }
+
+    public IRelayCommand SelectCommand { get; }
+
+    [ObservableProperty] private bool _isSelected;
+}
+
 /// <summary>A palette on the side bar: its colour, and whether it is the one in use</summary>
 public sealed partial class PaletteOption : ObservableObject
 {
@@ -19,14 +39,19 @@ public sealed partial class PaletteOption : ObservableObject
     {
         SelectCommand = new RelayCommand(() => select?.Invoke(info.Key));
         Key = info.Key;
-        Name = info.Name;
+        _name = info.Name;
         Swatch = new SolidColorBrush(Color.Parse(info.Swatch));
         _isSelected = selected;
     }
 
+    private readonly string _name;
+
     public string Key { get; }
 
-    public string Name { get; }
+    /// <summary>The name in the language of the interface</summary>
+    public string Name => Loc.T(_name);
+
+    public void LanguageChanged() => OnPropertyChanged(nameof(Name));
 
     public IRelayCommand SelectCommand { get; }
 
@@ -46,13 +71,30 @@ public partial class EmployeeViewModel
     private string _themeMode = EmployeePreferences.LoadThemeMode();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CurrentPaletteName), nameof(CurrentPaletteSwatch))]
+    [NotifyPropertyChangedFor(nameof(CurrentPaletteName), nameof(CurrentPaletteLabel), nameof(CurrentPaletteSwatch))]
     private string _palette = EmployeePreferences.LoadPalette();
 
     /// <summary>The side bar shows the names of its buttons; folded, only the icons</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SidebarWidth))]
     private bool _sidebarExpanded = EmployeePreferences.LoadSidebarExpanded();
+
+    /// <summary>Who is signed in, shown at the bottom of the side bar</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UserInitials))]
+    private string _userName = "";
+
+    [ObservableProperty] private string _userCode = "";
+
+    /// <summary>The first letters of the first and the last name, for the round badge of the person</summary>
+    public string UserInitials
+    {
+        get
+        {
+            var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length == 0 ? "" : parts.Length == 1 ? parts[0][..1].ToUpperInvariant() : (parts[0][..1] + parts[^1][..1]).ToUpperInvariant();
+        }
+    }
 
     public double SidebarWidth => SidebarExpanded ? 224 : 60;
 
@@ -63,11 +105,22 @@ public partial class EmployeeViewModel
     public bool IsModeDark => ThemeMode == "dark";
 
     /// <summary>The button of the side bar names the theme it switches to: dark while the look is light, light otherwise</summary>
-    public string ThemeToggleText => IsModeDark ? "Svijetla tema" : "Tamna tema";
+    public string ThemeToggleText => IsModeDark ? Loc.T("Svijetla tema") : Loc.T("Tamna tema");
 
-    public string CurrentPaletteName => ThemeManager.Palettes.FirstOrDefault(p => p.Key == Palette)?.Name ?? "";
+    public string CurrentPaletteName => Loc.T(ThemeManager.Palettes.FirstOrDefault(p => p.Key == Palette)?.Name ?? "");
+
+    public string CurrentPaletteLabel => Loc.F("Boje: {0}", CurrentPaletteName);
 
     public IBrush CurrentPaletteSwatch => new SolidColorBrush(Color.Parse(ThemeManager.Palettes.FirstOrDefault(p => p.Key == Palette)?.Swatch ?? "#0F766E"));
+
+    /// <summary>"bs" or "en"</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurrentLanguageName))]
+    private string _language = Loc.Language;
+
+    public string CurrentLanguageName => Loc.IsEnglish ? "English" : "Bosanski";
+
+    public IReadOnlyList<LanguageOption> LanguageOptions { get; private set; } = Array.Empty<LanguageOption>();
 
     public IReadOnlyList<PaletteOption> PaletteOptions { get; private set; } = Array.Empty<PaletteOption>();
 
@@ -75,6 +128,13 @@ public partial class EmployeeViewModel
     {
         if (!ThemeManager.IsKnownMode(ThemeMode)) ThemeMode = "light";
         if (!ThemeManager.IsKnownPalette(Palette)) Palette = ThemeManager.DefaultPalette;
+        LanguageOptions = new[]
+        {
+            new LanguageOption("bs", "Bosanski", Language == "bs", key => Language = key),
+            new LanguageOption("en", "English", Language == "en", key => Language = key)
+        };
+        Loc.Changed += OnLanguageApplied;
+        _session.UseLanguage(Language);
         PaletteOptions = ThemeManager.Palettes.Select(p => new PaletteOption(p, p.Key == Palette, key => Palette = key)).ToList();
     }
 
@@ -99,6 +159,28 @@ public partial class EmployeeViewModel
     private void SetPalette(string? key)
     {
         if (ThemeManager.IsKnownPalette(key)) Palette = key!;
+    }
+
+    partial void OnLanguageChanged(string value)
+    {
+        foreach (var option in LanguageOptions) option.IsSelected = option.Key == value;
+        Loc.Language = value;
+        _session.UseLanguage(value);
+        if (_applyingServerAppearance) return;
+        EmployeePreferences.SaveLanguage(value);
+        _ = SavePreferencesAsync(new PreferencesRequest(null, null, value));
+    }
+
+    /// <summary>The texts written in code are written again: the ones the window shows now, and the month or the list on screen</summary>
+    private void OnLanguageApplied()
+    {
+        foreach (var option in PaletteOptions) option.LanguageChanged();
+        OnPropertyChanged(nameof(ThemeToggleText));
+        OnPropertyChanged(nameof(CurrentPaletteName));
+        OnPropertyChanged(nameof(CurrentPaletteLabel));
+        OnPropertyChanged(nameof(CurrentLanguageName));
+        Sheet.LanguageChanged();
+        if (IsConnected && !IsBusy) _ = (InAdmin ? ShowAdminCommand.ExecuteAsync(null) : LoadCommand.ExecuteAsync(null));
     }
 
     partial void OnSidebarExpandedChanged(bool value) => EmployeePreferences.SaveSidebarExpanded(value);
@@ -134,13 +216,15 @@ public partial class EmployeeViewModel
     }
 
     /// <summary>What the server holds for the person wins over what this computer remembered</summary>
-    private void ApplyServerAppearance(string? mode, string? palette)
+    private void ApplyServerAppearance(string? mode, string? palette, string? language = null)
     {
         _applyingServerAppearance = true;
         try
         {
             if (ThemeManager.IsKnownMode(mode) && mode != ThemeMode) ThemeMode = mode!;
             if (ThemeManager.IsKnownPalette(palette) && palette != Palette) Palette = palette!;
+            if (Loc.IsKnown(language) && language != Language) Language = language!;
+            EmployeePreferences.SaveLanguage(Language);
             EmployeePreferences.SaveThemeMode(ThemeMode);
             EmployeePreferences.SavePalette(Palette);
         }
@@ -183,7 +267,7 @@ public partial class EmployeeViewModel
         await RunAdminAsync(async () =>
         {
             var added = await _admin.AddCodeAsync(result);
-            InfoText = $"Dodana šifra {added.Code} · {added.NameBs}. Zaposlenici je vide pri sljedećem otvaranju programa.";
+            InfoText = Loc.F("Dodana šifra {0} · {1}. Zaposlenici je vide pri sljedećem otvaranju programa.", added.Code, added.NameBs);
             await Admin.RefreshAsync(_admin);
             await LoadTimeCodesAsync();
         });
@@ -200,7 +284,7 @@ public partial class EmployeeViewModel
         await RunAdminAsync(async () =>
         {
             await _admin.UpdateCodeAsync(row.Code, result);
-            InfoText = $"Sačuvana šifra {row.Code}.";
+            InfoText = Loc.F("Sačuvana šifra {0}.", row.Code);
             await Admin.RefreshAsync(_admin);
             await LoadTimeCodesAsync();
         });

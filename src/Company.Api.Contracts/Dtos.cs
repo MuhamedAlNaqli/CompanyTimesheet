@@ -24,7 +24,8 @@ public sealed record MeDto(
     bool IsFinance = false,
     bool SheetExport = false,
     string? ThemeMode = null,
-    string? Palette = null);
+    string? Palette = null,
+    string? Language = null);
 
 public sealed record EmployeeDto(
     string Code,
@@ -102,7 +103,7 @@ public sealed record CodeDefinitionDto(int Code, string NameBs, string NameEn, s
 public sealed record SaveCodeRequest(int Code, string NameBs, string NameEn, string Colour, string Unit, bool IsActive);
 
 /// <summary>How the screen of one person looks: the theme and the colour palette. Null leaves the choice as it was.</summary>
-public sealed record PreferencesRequest(string? ThemeMode, string? Palette);
+public sealed record PreferencesRequest(string? ThemeMode, string? Palette, string? Language = null);
 
 /// <summary>The choices a person has for the look of the program, so that the server and the program agree</summary>
 public static class UiPreferences
@@ -110,6 +111,9 @@ public static class UiPreferences
     public static readonly string[] ThemeModes = { "system", "light", "dark" };
 
     public static readonly string[] Palettes = { "teal", "logosoft", "blue", "graphite" };
+
+    /// <summary>Bosnian and English</summary>
+    public static readonly string[] Languages = { "bs", "en" };
 }
 
 public sealed record CalendarDayDto(DateOnly Date, string Weekday, DayKind Type, string? HolidayName);

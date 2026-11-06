@@ -18,20 +18,20 @@
         <Button Name="OrgBox" Margin="6,0" Padding="12,8" MinWidth="170" MaxWidth="220" HorizontalAlignment="Center" HorizontalContentAlignment="Stretch"
                 Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="1" CornerRadius="10"
                 Command="{Binding $parent[Window].DataContext.EditEmployeeCommand}" CommandParameter="{Binding Row}"
-                ToolTip.Tip="Uredi osobu">
+                ToolTip.Tip="{em:Tr 'Uredi osobu'}">
             <StackPanel Spacing="1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <materialIcons:MaterialIcon Kind="AccountOutline" Width="18" Height="18" Foreground="{DynamicResource AppTextMuted}"/>
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource AppTextStrong}"/>
                 </StackPanel>
                 <TextBlock Text="{Binding Caption}" FontSize="11" Foreground="{DynamicResource AppTextMuted}"/>
-                <TextBlock Text="Administrator" IsVisible="{Binding IsAdmin}" FontSize="11" Foreground="#B45309"/>
-                <TextBlock Text="Neaktivan" IsVisible="{Binding !IsActive}" FontSize="11" Foreground="#991B1B"/>
+                <TextBlock Text="{em:Tr 'Administrator'}" IsVisible="{Binding IsAdmin}" FontSize="11" Foreground="#B45309"/>
+                <TextBlock Text="{em:Tr 'Neaktivan'}" IsVisible="{Binding !IsActive}" FontSize="11" Foreground="#991B1B"/>
             </StackPanel>
         </Button>
 
         <Button Name="OrgToggle" IsVisible="{Binding HasChildren}" Command="{Binding ToggleCommand}" Classes="secondary" Padding="0" MinHeight="22" Width="26" Height="22"
-                HorizontalAlignment="Center" Margin="0,4,0,0" CornerRadius="11" ToolTip.Tip="Prikaži ili sakrij podređene">
+                HorizontalAlignment="Center" Margin="0,4,0,0" CornerRadius="11" ToolTip.Tip="{em:Tr 'Prikaži ili sakrij podređene'}">
             <Panel>
                 <materialIcons:MaterialIcon Kind="ChevronUp" Width="16" Height="16" IsVisible="{Binding IsExpanded}"/>
                 <materialIcons:MaterialIcon Kind="ChevronDown" Width="16" Height="16" IsVisible="{Binding !IsExpanded}"/>

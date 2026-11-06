@@ -49,7 +49,8 @@ public static class MeEndpoints
                 features.FinanceAndLegal && employee.IsFinance,
                 features.SheetExport,
                 employee.ThemeMode,
-                employee.Palette));
+                employee.Palette,
+                employee.Language));
         });
 
         // What is due for the caller today: the rules are the domain library's, this only gathers the facts
@@ -65,11 +66,14 @@ public static class MeEndpoints
             var palette = request.Palette?.Trim().ToLowerInvariant();
             if (theme != null && !UiPreferences.ThemeModes.Contains(theme)) return Results.BadRequest(new ApiErrorDto("invalid-theme", "Unknown theme."));
             if (palette != null && !UiPreferences.Palettes.Contains(palette)) return Results.BadRequest(new ApiErrorDto("invalid-palette", "Unknown palette."));
+            var language = request.Language?.Trim().ToLowerInvariant();
+            if (language != null && !UiPreferences.Languages.Contains(language)) return Results.BadRequest(new ApiErrorDto("invalid-language", "Unknown language."));
 
             var code = Identities.EmployeeCode(user)!;
             var employee = await db.Employees.FirstAsync(e => e.Code == code);
             if (theme != null) employee.ThemeMode = theme;
             if (palette != null) employee.Palette = palette;
+            if (language != null) employee.Language = language;
             await db.SaveChangesAsync();
             return Results.NoContent();
         });

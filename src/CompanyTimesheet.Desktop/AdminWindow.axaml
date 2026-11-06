@@ -4,7 +4,7 @@
         xmlns:em="using:CompanyTimesheet.Desktop"
         x:Class="CompanyTimesheet.Desktop.AdminWindow"
         x:DataType="em:EmployeeViewModel"
-        Title="Evidencija radnog vremena - Administracija"
+        Title="{em:Tr 'Evidencija radnog vremena - Administracija'}"
         Width="1180" Height="760" MinWidth="900" MinHeight="540"
         WindowStartupLocation="CenterScreen">
 
@@ -16,8 +16,7 @@
         <!-- Header: who -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Administracija" Classes="header" Margin="0,0,0,2"/>
-                <TextBlock Name="EmpWhoText" Text="{Binding WhoText}" Foreground="{DynamicResource AppTextMuted}"/>
+                <TextBlock Text="{em:Tr 'Administracija'}" Classes="header" Margin="0,0,0,2"/>
             </StackPanel>
         </Grid>
 
@@ -32,7 +31,7 @@
                     <Button Name="EmpRetryButton" Grid.Column="1" Command="{Binding ShowAdminCommand}" Classes="secondary" Padding="12,6" Margin="12,0,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <materialIcons:MaterialIcon Kind="Refresh" Width="16" Height="16"/>
-                            <TextBlock Text="Pokušaj ponovo"/>
+                            <TextBlock Text="{em:Tr 'Pokušaj ponovo'}"/>
                         </StackPanel>
                     </Button>
                 </Grid>
@@ -45,29 +44,29 @@
                 <Button Name="EmpAddPersonButton" Command="{Binding AddEmployeeCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowPeople}" Classes="primary" Padding="14,9">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="AccountPlus" Width="18" Height="18"/>
-                        <TextBlock Text="Nova osoba"/>
+                        <TextBlock Text="{em:Tr 'Nova osoba'}"/>
                     </StackPanel>
                 </Button>
                 <Button Name="EmpAddCodeButton" Command="{Binding AddCodeCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowCodes}" Classes="primary" Padding="14,9">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="PlaylistPlus" Width="18" Height="18"/>
-                        <TextBlock Text="Nova šifra"/>
+                        <TextBlock Text="{em:Tr 'Nova šifra'}"/>
                     </StackPanel>
                 </Button>
                 <Button Name="EmpImportButton" Command="{Binding ImportEmployeesCommand}" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding Admin.ShowPeople}" Classes="secondary" Padding="14,9">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FileUpload" Width="18" Height="18"/>
-                        <TextBlock Text="Uvezi listu radnika"/>
+                        <TextBlock Text="{em:Tr 'Uvezi listu radnika'}"/>
                     </StackPanel>
                 </Button>
                 <Button Name="EmpAuditButton" Command="{Binding VerifyAuditCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="14,9"
-                        ToolTip.Tip="Revizijski dnevnik bilježi ko je i kada šta promijenio: osobe, uloge, predaje i odluke o šihtaricama. Provjera potvrđuje da zapisi nisu naknadno mijenjani.">
+                        ToolTip.Tip="{em:Tr 'Revizijski dnevnik bilježi ko je i kada šta promijenio: osobe, uloge, predaje i odluke o šihtaricama. Provjera potvrđuje da zapisi nisu naknadno mijenjani.'}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="ShieldCheck" Width="18" Height="18"/>
-                        <TextBlock Text="Provjeri revizijski dnevnik"/>
+                        <TextBlock Text="{em:Tr 'Provjeri revizijski dnevnik'}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="EmpAdminRefreshButton" Command="{Binding ShowAdminCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="10,9" ToolTip.Tip="Osvježi">
+                <Button Name="EmpAdminRefreshButton" Command="{Binding ShowAdminCommand}" IsEnabled="{Binding !IsBusy}" Classes="secondary" Padding="10,9" ToolTip.Tip="{em:Tr 'Osvježi'}">
                     <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"/>
                 </Button>
             </StackPanel>
@@ -75,24 +74,24 @@
             <!-- Table or chart of the hierarchy -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                 <Button Name="EmpAdminListButton" Command="{Binding Admin.ShowListViewCommand}" Classes.primary="{Binding Admin.ShowList}" Classes.secondary="{Binding !Admin.ShowList}"
-                        Padding="12,9" ToolTip.Tip="Prikaži kao tabelu">
+                        Padding="12,9" ToolTip.Tip="{em:Tr 'Prikaži kao tabelu'}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FormatListBulleted" Width="18" Height="18"/>
-                        <TextBlock Text="Lista"/>
+                        <TextBlock Text="{em:Tr 'Lista'}"/>
                     </StackPanel>
                 </Button>
                 <Button Name="EmpAdminChartButton" Command="{Binding Admin.ShowChartViewCommand}" Classes.primary="{Binding Admin.ShowChart}" Classes.secondary="{Binding !Admin.ShowChart}"
-                        Padding="12,9" ToolTip.Tip="Prikaži hijerarhiju kao stablo">
+                        Padding="12,9" ToolTip.Tip="{em:Tr 'Prikaži hijerarhiju kao stablo'}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FileTree" Width="18" Height="18"/>
-                        <TextBlock Text="Hijerarhija"/>
+                        <TextBlock Text="{em:Tr 'Hijerarhija'}"/>
                     </StackPanel>
                 </Button>
                 <Button Name="EmpAdminCodesButton" Command="{Binding Admin.ShowCodesViewCommand}" Classes.primary="{Binding Admin.ShowCodes}" Classes.secondary="{Binding !Admin.ShowCodes}"
-                        Padding="12,9" ToolTip.Tip="Šifre koje zaposlenici unose u šihtaricu: dodajte novu ili promijenite postojeću">
+                        Padding="12,9" ToolTip.Tip="{em:Tr 'Šifre koje zaposlenici unose u šihtaricu: dodajte novu ili promijenite postojeću'}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <materialIcons:MaterialIcon Kind="FormatListNumbered" Width="18" Height="18"/>
-                        <TextBlock Text="Šifre"/>
+                        <TextBlock Text="{em:Tr 'Šifre'}"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -105,10 +104,10 @@
                     <TextBlock Name="EmpAdminSummary" Text="{Binding Admin.SummaryText}" IsVisible="{Binding Admin.ShowPeople}" Foreground="{DynamicResource AppTextMuted}"/>
                     <TextBlock Name="EmpCodesSummary" Text="{Binding Admin.CodesSummary}" IsVisible="{Binding Admin.ShowCodes}" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
                     <TextBlock Name="EmpAuditHint" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppTextMuted}" IsVisible="{Binding Admin.ShowPeople}"
-                               Text="Revizijski dnevnik je zapis o tome ko je i kada šta promijenio (osobe, uloge, predaje i odluke o šihtaricama). Svaki zapis je vezan za prethodni, pa se naknadna izmjena primijeti. Dugme „Provjeri revizijski dnevnik“ to provjerava."/>
-                    <TextBox Name="EmpAdminFilter" Text="{Binding Admin.Filter}" Watermark="Traži po imenu, šifri ili korisničkom imenu" MaxWidth="420" HorizontalAlignment="Left"
+                               Text="{em:Tr 'Revizijski dnevnik je zapis o tome ko je i kada šta promijenio (osobe, uloge, predaje i odluke o šihtaricama). Svaki zapis je vezan za prethodni, pa se naknadna izmjena primijeti. Dugme „Provjeri revizijski dnevnik“ to provjerava.'}"/>
+                    <TextBox Name="EmpAdminFilter" Text="{Binding Admin.Filter}" Watermark="{em:Tr 'Traži po imenu, šifri ili korisničkom imenu'}" MaxWidth="420" HorizontalAlignment="Left"
                              IsVisible="{Binding Admin.ShowList}"/>
-                    <TextBlock Text="Ko je kome nadređeni. Kliknite osobu da je uredite; strelica ispod osobe otvara ili zatvara njene podređene."
+                    <TextBlock Text="{em:Tr 'Ko je kome nadređeni. Kliknite osobu da je uredite; strelica ispod osobe otvara ili zatvara njene podređene.'}"
                                IsVisible="{Binding Admin.ShowChart}" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                 </StackPanel>
 
@@ -116,11 +115,11 @@
                 <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding Admin.ShowList}">
                     <Border Margin="20,0,20,0" Padding="0,8" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="80,*,200,260,90">
-                            <TextBlock Text="Šifra" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="1" Text="Ime i prezime" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="2" Text="Nadređeni" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="3" Text="Korisničko ime i uloga" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="4" Text="Radnje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                            <TextBlock Text="{em:Tr 'Šifra'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="1" Text="{em:Tr 'Ime i prezime'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="2" Text="{em:Tr 'Nadređeni'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="3" Text="{em:Tr 'Korisničko ime i uloga'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="4" Text="{em:Tr 'Radnje'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
                         </Grid>
                     </Border>
                     <ScrollViewer Grid.Row="1">
@@ -139,7 +138,7 @@
                                                 <TextBlock Text="{Binding UsernameText}" Foreground="{DynamicResource AppTextStrong}"/>
                                                 <TextBlock Text="{Binding RolesText}" FontSize="11" Foreground="#B45309"/>
                                             </StackPanel>
-                                            <Button Grid.Column="4" Classes="icon" Width="32" Height="32" ToolTip.Tip="Uredi osobu" HorizontalAlignment="Right"
+                                            <Button Grid.Column="4" Classes="icon" Width="32" Height="32" ToolTip.Tip="{em:Tr 'Uredi osobu'}" HorizontalAlignment="Right"
                                                     Command="{Binding $parent[Window].DataContext.EditEmployeeCommand}" CommandParameter="{Binding}">
                                                 <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
                                             </Button>
@@ -155,13 +154,13 @@
                 <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding Admin.ShowCodes}">
                     <Border Margin="20,0,20,0" Padding="0,8" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="70,*,130,190,90,90,56">
-                            <TextBlock Text="Šifra" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="1" Text="Naziv" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="2" Text="Boja" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="3" Text="Unos" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="4" Text="Stanje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="5" Text="Vrsta" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
-                            <TextBlock Grid.Column="6" Text="Radnje" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                            <TextBlock Text="{em:Tr 'Šifra'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="1" Text="{em:Tr 'Naziv'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="2" Text="{em:Tr 'Boja'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="3" Text="{em:Tr 'Unos'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="4" Text="{em:Tr 'Stanje'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="5" Text="{em:Tr 'Vrsta'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
+                            <TextBlock Grid.Column="6" Text="{em:Tr 'Radnje'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
                         </Grid>
                     </Border>
                     <ScrollViewer Grid.Row="1">
@@ -179,7 +178,7 @@
                                             <TextBlock Grid.Column="3" Text="{Binding UnitShort}" VerticalAlignment="Center" Foreground="{DynamicResource AppText}"/>
                                             <TextBlock Grid.Column="4" Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="{DynamicResource AppText}"/>
                                             <TextBlock Grid.Column="5" Text="{Binding OriginText}" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
-                                            <Button Grid.Column="6" Classes="icon" Width="32" Height="32" ToolTip.Tip="Uredi šifru" HorizontalAlignment="Right"
+                                            <Button Grid.Column="6" Classes="icon" Width="32" Height="32" ToolTip.Tip="{em:Tr 'Uredi šifru'}" HorizontalAlignment="Right"
                                                     Command="{Binding $parent[Window].DataContext.EditCodeCommand}" CommandParameter="{Binding}">
                                                 <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
                                             </Button>

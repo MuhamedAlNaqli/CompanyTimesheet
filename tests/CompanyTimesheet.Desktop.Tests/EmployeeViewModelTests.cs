@@ -30,11 +30,12 @@ public class EmployeeViewModelTests
 
         public string? ServerTheme { get; set; }
         public string? ServerPalette { get; set; }
+        public string? ServerLanguage { get; set; }
         public List<TimeCodeDto> ServerCodes { get; set; } = new();
         public List<PreferencesRequest> Preferences { get; } = new();
 
         public Task<MeDto> GetMeAsync(CancellationToken ct = default) =>
-            Record("me", new MeDto("Z-001", "Amra Adžamija", @"corp\amra", IsAdmin, IsApprover, false, "Z-002", new[] { "Z-002" }, "Test", false, SheetExport, ServerTheme, ServerPalette));
+            Record("me", new MeDto("Z-001", "Amra Adžamija", @"corp\amra", IsAdmin, IsApprover, false, "Z-002", new[] { "Z-002" }, "Test", false, SheetExport, ServerTheme, ServerPalette, ServerLanguage));
 
         public Task SetPreferencesAsync(PreferencesRequest request, CancellationToken ct = default) { Preferences.Add(request); return Task.CompletedTask; }
 
@@ -136,6 +137,8 @@ public class EmployeeViewModelTests
 
     private sealed class FakeSession : ICompanySession
     {
+        public string Language { get; private set; } = "bs";
+        public void UseLanguage(string language) => Language = language;
         public bool PasswordSignIn { get; set; }
         public bool HasToken { get; private set; }
         public List<string> Servers { get; } = new();
@@ -1474,6 +1477,50 @@ public class EmployeeViewModelTests
         Assert.AreEqual(2, client.Preferences.Count);
         Assert.AreEqual("dark", client.Preferences[0].ThemeMode);
         Assert.AreEqual("logosoft", client.Preferences[1].Palette);
+    }
+
+    [TestMethod]
+    public async Task ChoosingEnglish_IsSentToTheServer_KeptHere_AndTheMonthIsReadAgain()
+    {
+        var (vm, client, _, _, _) = Create();
+        await vm.LoadCommand.ExecuteAsync(null);
+        client.Calls.Clear();
+        try
+        {
+            vm.LanguageOptions.Single(l => l.Key == "en").SelectCommand.Execute(null);
+            await Task.Delay(100);
+
+            Assert.AreEqual("en", vm.Language);
+            Assert.AreEqual("English", vm.CurrentLanguageName);
+            Assert.AreEqual("Dark theme", vm.ThemeToggleText);
+            Assert.AreEqual("en", EmployeePreferences.LoadLanguage());
+            Assert.AreEqual("en", client.Preferences.Single(p => p.Language != null).Language);
+            Assert.IsTrue(client.Calls.Any(c => c.StartsWith("sheet")), "the month is read again, so its texts are in the new language");
+            Assert.AreEqual("Colours: Green", vm.CurrentPaletteLabel);
+        }
+        finally
+        {
+            Loc.Initialize("bs");
+        }
+    }
+
+    [TestMethod]
+    public async Task TheLanguageSavedOnTheAccount_WinsOverTheOneOfThisComputer()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.ServerLanguage = "en";
+        try
+        {
+            await vm.LoadCommand.ExecuteAsync(null);
+
+            Assert.AreEqual("en", vm.Language);
+            Assert.IsTrue(Loc.IsEnglish);
+            Assert.AreEqual(0, client.Preferences.Count, "what the server told us is not saved on the server again");
+        }
+        finally
+        {
+            Loc.Initialize("bs");
+        }
     }
 
     [TestMethod]

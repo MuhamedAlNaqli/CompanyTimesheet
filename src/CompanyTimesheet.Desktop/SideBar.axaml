@@ -38,10 +38,10 @@
     <Border Width="{Binding SidebarWidth}" Background="{DynamicResource AppSidebar}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,1,0">
         <Grid RowDefinitions="Auto,*,Auto" Margin="8,12">
 
-            <Button Name="SidebarToggleButton" Grid.Row="0" Classes="sidebar-nav" Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="Proširi ili skupi izbornik">
+            <Button Name="SidebarToggleButton" Grid.Row="0" Classes="sidebar-nav" Command="{Binding ToggleSidebarCommand}" ToolTip.Tip="{em:Tr 'Proširi ili skupi izbornik'}">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <materialIcons:MaterialIcon Kind="Menu" Width="20" Height="20"/>
-                    <TextBlock Text="Evidencija" FontWeight="SemiBold" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    <TextBlock Text="{em:Tr 'Evidencija'}" FontWeight="SemiBold" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
                 </StackPanel>
             </Button>
 
@@ -59,17 +59,17 @@
                 </Button>
 
                 <!-- The colour palettes live in a pop-up, so a longer list of palettes never crowds the side bar -->
-                <Button Name="SidebarPaletteButton" Classes="sidebar-nav" ToolTip.Tip="Boje aplikacije">
+                <Button Name="SidebarPaletteButton" Classes="sidebar-nav" ToolTip.Tip="{em:Tr 'Boje aplikacije'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Border Width="20" Height="20" Padding="1">
                             <Ellipse Fill="{Binding CurrentPaletteSwatch}"/>
                         </Border>
-                        <TextBlock Text="{Binding CurrentPaletteName, StringFormat='Boje: {0}'}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                        <TextBlock Text="{Binding CurrentPaletteLabel}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
                     </StackPanel>
                     <Button.Flyout>
                         <Flyout Placement="RightEdgeAlignedBottom">
                             <StackPanel Name="SidebarPaletteMenu" Width="230" Spacing="2">
-                                <TextBlock Text="Paleta boja" Classes="label" Margin="12,4,0,4"/>
+                                <TextBlock Text="{em:Tr 'Paleta boja'}" Classes="label" Margin="12,4,0,4"/>
                                 <ItemsControl ItemsSource="{Binding PaletteOptions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="em:PaletteOption">
@@ -87,7 +87,7 @@
                                 <Button Name="SidebarSystemTheme" Classes="sidebar-nav" Command="{Binding ToggleSystemThemeCommand}">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <materialIcons:MaterialIcon Kind="ThemeLightDark" Width="18" Height="18" Margin="0,0,12,0"/>
-                                        <TextBlock Grid.Column="1" Text="Prati temu Windowsa" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{em:Tr 'Prati temu Windowsa'}" VerticalAlignment="Center"/>
                                         <materialIcons:MaterialIcon Grid.Column="2" Kind="Check" Width="18" Height="18" IsVisible="{Binding IsModeSystem}"/>
                                     </Grid>
                                 </Button>
@@ -96,18 +96,59 @@
                     </Button.Flyout>
                 </Button>
 
-                <Button Name="EmpUpdateButton" Classes="sidebar-nav" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" ToolTip.Tip="Provjeri ažuriranja">
+                <!-- The language of the interface -->
+                <Button Name="SidebarLanguageButton" Classes="sidebar-nav" ToolTip.Tip="{em:Tr 'Jezik'}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <materialIcons:MaterialIcon Kind="Translate" Width="20" Height="20"/>
+                        <TextBlock Text="{Binding CurrentLanguageName}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="RightEdgeAlignedBottom">
+                            <StackPanel Name="SidebarLanguageMenu" Width="200" Spacing="2">
+                                <TextBlock Text="{em:Tr 'Jezik'}" Classes="label" Margin="12,4,0,4"/>
+                                <ItemsControl ItemsSource="{Binding LanguageOptions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="em:LanguageOption">
+                                            <Button Classes="sidebar-nav" Command="{Binding SelectCommand}" AutomationProperties.Name="{Binding Name}">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                    <materialIcons:MaterialIcon Grid.Column="1" Kind="Check" Width="18" Height="18" IsVisible="{Binding IsSelected}"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+
+                <Button Name="EmpUpdateButton" Classes="sidebar-nav" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsBusy}" ToolTip.Tip="{em:Tr 'Provjeri ažuriranja'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="CloudDownloadOutline" Width="20" Height="20"/>
-                        <TextBlock Text="Provjeri ažuriranja" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                        <TextBlock Text="{em:Tr 'Provjeri ažuriranja'}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="EmpLogoutButton" Classes="sidebar-nav" Command="{Binding LogoutCommand}" ToolTip.Tip="Odjava">
+                <Button Name="EmpLogoutButton" Classes="sidebar-nav" Command="{Binding LogoutCommand}" ToolTip.Tip="{em:Tr 'Odjava'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="Logout" Width="20" Height="20"/>
-                        <TextBlock Text="Odjava" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
+                        <TextBlock Text="{em:Tr 'Odjava'}" VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}"/>
                     </StackPanel>
                 </Button>
+
+                <!-- Who is signed in -->
+                <Border Name="SidebarUserCard" Margin="0,8,0,0" Padding="8,10" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,1,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="12" ToolTip.Tip="{Binding WhoText}">
+                        <Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource AppAccentSoft}">
+                            <TextBlock Text="{Binding UserInitials}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppAccent}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" IsVisible="{Binding SidebarExpanded}" MaxWidth="150">
+                            <TextBlock Name="SidebarUserName" Text="{Binding UserName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource AppTextStrong}"/>
+                            <TextBlock Name="SidebarUserCode" Text="{Binding UserCode}" FontSize="11" Foreground="{DynamicResource AppTextMuted}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </Grid>
     </Border>

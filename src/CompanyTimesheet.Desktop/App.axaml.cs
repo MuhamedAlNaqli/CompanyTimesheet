@@ -41,12 +41,9 @@ public partial class App : Application
     {
         if (ServiceProvider == null) throw new InvalidOperationException("ServiceProvider is not initialized");
 
-        // The interface is Bosnian only (month names, date pickers and number formats)
-        var bosnian = EmployeeFormat.Bosnian;
-        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = bosnian;
-        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = bosnian;
-        System.Globalization.CultureInfo.CurrentCulture = bosnian;
-        System.Globalization.CultureInfo.CurrentUICulture = bosnian;
+        // The language this computer used last (Bosnian or English); it sets the month names, date pickers and number formats too.
+        // After sign-in the choice saved on the person's account replaces it.
+        Loc.Initialize(EmployeePreferences.LoadLanguage());
 
         try
         {
@@ -63,13 +60,13 @@ public partial class App : Application
             Serilog.Log.Error(ex, "The app could not start");
             return new Window
             {
-                Title = "Evidencija radnog vremena",
+                Title = Loc.T("Evidencija radnog vremena"),
                 Width = 520,
                 SizeToContent = SizeToContent.Height,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
                 Content = new TextBlock
                 {
-                    Text = "Evidencija radnog vremena ne može se pokrenuti: " + (ex.InnerException?.Message ?? ex.Message),
+                    Text = Loc.T("Evidencija radnog vremena ne može se pokrenuti: ") + (ex.InnerException?.Message ?? ex.Message),
                     Margin = new Thickness(32),
                     TextWrapping = global::Avalonia.Media.TextWrapping.Wrap
                 }

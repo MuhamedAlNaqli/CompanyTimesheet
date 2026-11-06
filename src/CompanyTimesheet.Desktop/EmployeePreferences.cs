@@ -77,6 +77,11 @@ public static class EmployeePreferences
 
     public static void SavePalette(string palette) => Write("palette.txt", palette);
 
+    /// <summary>"bs" or "en"</summary>
+    public static string LoadLanguage() => Read("language.txt") is "en" ? "en" : "bs";
+
+    public static void SaveLanguage(string language) => Write("language.txt", language);
+
     /// <summary>The side bar is open (with the names of the buttons) unless the person folded it</summary>
     public static bool LoadSidebarExpanded() => !Read("sidebar.txt").Equals("collapsed", StringComparison.OrdinalIgnoreCase);
 

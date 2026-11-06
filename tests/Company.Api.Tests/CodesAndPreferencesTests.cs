@@ -153,4 +153,52 @@ public class CodesAndPreferencesTests
         Assert.AreEqual(HttpStatusCode.BadRequest, (await amra.PutAsJsonAsync("/api/me/preferences", new PreferencesRequest("neon", null))).StatusCode);
         Assert.AreEqual(HttpStatusCode.BadRequest, (await amra.PutAsJsonAsync("/api/me/preferences", new PreferencesRequest(null, "pink"))).StatusCode);
     }
+
+    [TestMethod]
+    public async Task TheLanguageIsKeptOnTheAccount_AndAnUnknownOneIsRefused()
+    {
+        using var factory = new ApiFactory();
+        await factory.ImportAsync(ApiFactory.SmallList);
+        await factory.LinkAsync("Z-001", @"corpmra");
+        var amra = factory.As(@"corpmra");
+
+        Assert.IsNull((await amra.GetFromJsonAsync<MeDto>("/api/me"))!.Language);
+        Assert.AreEqual(HttpStatusCode.NoContent, (await amra.PutAsJsonAsync("/api/me/preferences", new PreferencesRequest(null, null, "en"))).StatusCode);
+        Assert.AreEqual("en", (await amra.GetFromJsonAsync<MeDto>("/api/me"))!.Language);
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await amra.PutAsJsonAsync("/api/me/preferences", new PreferencesRequest(null, null, "de"))).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task TheFindingsOfTheRules_AreWrittenInEnglishWhenTheProgramAsksForIt()
+    {
+        using var factory = new ApiFactory();
+        await factory.ImportAsync(ApiFactory.SmallList);
+        await factory.LinkAsync("Z-001", @"corpmra");
+        var amra = factory.As(@"corpmra");
+
+        // 7.5 hours on a working day is not the daily norm
+        await amra.PutAsJsonAsync("/api/timesheet/2026/9/days/2026-09-14", new SetEntryRequest(1010, 450));
+        var bosnian = await amra.GetFromJsonAsync<SheetDto>("/api/timesheet/2026/9");
+        Assert.IsTrue(bosnian!.Issues.Any(i => i.Message.Contains("razlikuju se od dnevne norme")));
+
+        amra.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en");
+        var english = await amra.GetFromJsonAsync<SheetDto>("/api/timesheet/2026/9");
+        Assert.IsTrue(english!.Issues.Any(i => i.Message.Contains("differ from the daily norm")));
+        Assert.IsFalse(english.Issues.Any(i => i.Message.Contains("razlikuju se")));
+    }
+
+    [TestMethod]
+    public void TheRequestLanguage_IsEnglishOnlyWhenAsked_AndTheMailsFollowThePerson()
+    {
+        Assert.AreEqual("en", Company.Api.Texts.RequestLanguage.From("en-GB,en;q=0.9"));
+        Assert.AreEqual("en", Company.Api.Texts.RequestLanguage.From("EN"));
+        Assert.AreEqual("bs", Company.Api.Texts.RequestLanguage.From("bs-Latn-BA"));
+        Assert.AreEqual("bs", Company.Api.Texts.RequestLanguage.From(null));
+
+        var item = new ReminderDto(ReminderType.SubmitOverdue, 2026, 9, 1, new DateOnly(2026, 9, 25));
+        Assert.AreEqual("Your timesheet is late", Company.Api.Texts.ReminderTexts.Title(item, "en"));
+        Assert.AreEqual("Šihtarica kasni", Company.Api.Texts.ReminderTexts.Title(item));
+        StringAssert.Contains(Company.Api.Texts.ReminderTexts.Line(item, "en"), "September 2026");
+        StringAssert.Contains(Company.Api.Texts.ReminderTexts.Body("Amra", new[] { item }, "en"), "Dear Amra");
+    }
 }

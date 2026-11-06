@@ -79,6 +79,9 @@ public sealed class UpdateService : IUpdateService, IDisposable
                 TmpDownloadFileNameWithExtension = "CompanyTimesheet-update.msi"
             };
 
+            // The program closes for the installer; it must come back by itself afterwards
+            _sparkleUpdater.PreparingToExit += (_, _) => UpdateRelauncher.Start(_logger);
+
             _logger.LogInformation("UpdateService initialized successfully (current version {Version})", GetCurrentVersion());
             await Task.CompletedTask;
         }

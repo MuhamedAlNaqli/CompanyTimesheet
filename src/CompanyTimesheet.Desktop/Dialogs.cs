@@ -44,7 +44,7 @@ public enum EntryKind
 /// <summary>A code the employee can pick; the form changes with it</summary>
 public sealed record CodeOption(TimeCode Code)
 {
-    public string Label => $"{Code.Code} · {TimeCodeNames.Bs(Code.Code)}";
+    public string Label => $"{Code.Code} · {EmployeeFormat.CodeName(Code.Code)}";
 
     public bool NeedsHours => Code.Unit == CodeUnit.Hours;
 
@@ -82,7 +82,7 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         // A code the administrator switched off is no longer offered, except on the entry that already has it
         Codes = TimeCodes.All.Where(c => (c.Active || c.Code == entry?.Code) && (overtime == null || c.IsOvertime)).Select(c => new CodeOption(c)).ToList();
         CanChangeDate = entry == null;
-        Title = overtime != null ? "Izmjena prekovremenog rada" : entry != null ? "Izmjena unosa" : "Novi unos";
+        Title = overtime != null ? Loc.T("Izmjena prekovremenog rada") : entry != null ? Loc.T("Izmjena unosa") : Loc.T("Novi unos");
 
         var day = overtime?.Date ?? date ?? (DateTime.Today.Year == year && DateTime.Today.Month == month
             ? DateOnly.FromDateTime(DateTime.Today) : new DateOnly(year, month, 1));
@@ -91,7 +91,7 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         _selectedCode = Codes.FirstOrDefault(c => c.Code.Code == code) ?? Codes[0];
         _date = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue));
         _to = _date;
-        _hoursText = entry is { Minutes: > 0 } ? (entry.Minutes / 60m).ToString("0.##", EmployeeFormat.Bosnian) : "8";
+        _hoursText = entry is { Minutes: > 0 } ? (entry.Minutes / 60m).ToString("0.##", Loc.Culture) : "8";
         _startText = overtime?.Start.ToString("HH\\:mm") ?? "17:00";
         _endText = overtime?.End.ToString("HH\\:mm") ?? "19:00";
         _description = overtime?.Description ?? "";
@@ -137,15 +137,15 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
 
     public bool IsOvertime => Kind == EntryKind.Overtime;
 
-    public string DateLabel => IsAbsence ? "Od" : "Datum";
+    public string DateLabel => IsAbsence ? Loc.T("Od") : Loc.T("Datum");
 
     public bool ShowHint => Kind != EntryKind.Overtime || SelectedCode != null;
 
     public string HintText => Kind switch
     {
-        EntryKind.Absence => "Šifra odsustva se upisuje za cijeli dan; jedan dan se računa kao 8 sati. Vikendi i praznici se preskaču. Prvo pogledajte dane, zatim sačuvajte.",
-        EntryKind.Overtime => "Šifra prekovremenog rada se određuje prema datumu i vremenu (radni dan, vikend, praznik, noć). Ukupno se računa iz početka i kraja; rad poslije ponoći upisuje se na sljedeći datum.",
-        _ => "Upišite sate za ovaj dan, na primjer 8, 7,5 ili 7:30."
+        EntryKind.Absence => Loc.T("Šifra odsustva se upisuje za cijeli dan; jedan dan se računa kao 8 sati. Vikendi i praznici se preskaču. Prvo pogledajte dane, zatim sačuvajte."),
+        EntryKind.Overtime => Loc.T("Šifra prekovremenog rada se određuje prema datumu i vremenu (radni dan, vikend, praznik, noć). Ukupno se računa iz početka i kraja; rad poslije ponoći upisuje se na sljedeći datum."),
+        _ => Loc.T("Upišite sate za ovaj dan, na primjer 8, 7,5 ili 7:30.")
     };
 
     partial void OnSelectedCodeChanged(CodeOption? value)
@@ -187,16 +187,16 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         var interval = new OvertimeInterval(DateOnly.FromDateTime(Date.Value.Date), start, end);
         if (interval.TotalMinutes == 0)
         {
-            WarningText = "Početak i kraj ne smiju biti isti.";
+            WarningText = Loc.T("Početak i kraj ne smiju biti isti.");
             return;
         }
 
         var result = OvertimeClassifier.Classify(interval, _dayTypeOf);
-        var parts = result.Allocations.Select(a => $"{a.Code} {TimeCodeNames.Bs(a.Code)}: {EmployeeFormat.Hours(a.Minutes)}" +
-                                                    (a.Date != interval.Date ? $" (za {EmployeeFormat.ShortDate(a.Date)})" : ""));
-        SummaryText = $"Ukupno {EmployeeFormat.Hours(result.TotalMinutes)}" + (result.Allocations.Count > 0 ? " — " + string.Join("; ", parts) : "");
+        var parts = result.Allocations.Select(a => $"{a.Code} {EmployeeFormat.CodeName(a.Code)}: {EmployeeFormat.Hours(a.Minutes)}" +
+                                                    (a.Date != interval.Date ? Loc.F(" (za {0})", EmployeeFormat.ShortDate(a.Date)) : ""));
+        SummaryText = Loc.F("Ukupno {0}", EmployeeFormat.Hours(result.TotalMinutes)) + (result.Allocations.Count > 0 ? " — " + string.Join("; ", parts) : "");
         if (result.Conflicts.Count > 0)
-            WarningText = "Prekovremeni rad se ne može upisati u redovno radno vrijeme (08:30–17:00) radnog dana ili praznika.";
+            WarningText = Loc.T("Prekovremeni rad se ne može upisati u redovno radno vrijeme (08:30–17:00) radnog dana ili praznika.");
     }
 
     private bool CanSave => !IsAbsence || Previewed;
@@ -215,13 +215,13 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         if (request == null) return;
         if (request.To < request.From)
         {
-            Error = "Kraj ne može biti prije početka.";
+            Error = Loc.T("Kraj ne može biti prije početka.");
             return;
         }
 
         if (!InMonth(request.From) || !InMonth(request.To))
         {
-            Error = "Odsustvo se upisuje unutar mjeseca koji je otvoren.";
+            Error = Loc.T("Odsustvo se upisuje unutar mjeseca koji je otvoren.");
             return;
         }
 
@@ -230,15 +230,15 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
             var preview = await _preview(request);
             if (preview.Days.Count == 0)
             {
-                PreviewText = "U ovom periodu nema dana na koje se šifra upisuje (vikendi i praznici se preskaču).";
+                PreviewText = Loc.T("U ovom periodu nema dana na koje se šifra upisuje (vikendi i praznici se preskaču).");
                 Previewed = false;
                 return;
             }
 
             var skipped = preview.Skipped.Count == 0
                 ? ""
-                : "\nPreskočeno: " + string.Join(", ", preview.Skipped.Select(s => $"{EmployeeFormat.ShortDate(s.Date)} ({BosnianTexts.SkippedBecause(s.Reason)})"));
-            PreviewText = $"Šifra {request.Code} bit će upisana za {preview.Days.Count} {(preview.Days.Count == 1 ? "dan" : "dana")}: " +
+                : Loc.T("\nPreskočeno: ") + string.Join(", ", preview.Skipped.Select(s => $"{EmployeeFormat.ShortDate(s.Date)} ({EmployeeFormat.Skipped(s.Reason)})"));
+            PreviewText = Loc.F("Šifra {0} bit će upisana za {1} {2}: ", request.Code, preview.Days.Count, Loc.T(preview.Days.Count == 1 ? "dan" : "dana")) +
                           string.Join(", ", preview.Days.Select(EmployeeFormat.ShortDate)) + skipped;
             Previewed = true;
         }
@@ -256,14 +256,14 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
         Error = "";
         if (SelectedCode == null || Date == null)
         {
-            Error = "Odaberite šifru i datum.";
+            Error = Loc.T("Odaberite šifru i datum.");
             return;
         }
 
         var date = DateOnly.FromDateTime(Date.Value.Date);
         if (!InMonth(date))
         {
-            Error = "Datum mora biti u mjesecu koji je otvoren.";
+            Error = Loc.T("Datum mora biti u mjesecu koji je otvoren.");
             return;
         }
 
@@ -276,19 +276,19 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
             case EntryKind.Overtime:
                 if (!EmployeeFormat.TryParseTime(StartText, out var start) || !EmployeeFormat.TryParseTime(EndText, out var end))
                 {
-                    Error = "Upišite vrijeme kao 17:00.";
+                    Error = Loc.T("Upišite vrijeme kao 17:00.");
                     return;
                 }
 
                 if (new OvertimeInterval(date, start, end).TotalMinutes == 0)
                 {
-                    Error = "Početak i kraj ne smiju biti isti.";
+                    Error = Loc.T("Početak i kraj ne smiju biti isti.");
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(Description))
                 {
-                    Error = "Kratak opis posla je obavezan: napišite šta je tačno rađeno.";
+                    Error = Loc.T("Kratak opis posla je obavezan: napišite šta je tačno rađeno.");
                     return;
                 }
 
@@ -299,7 +299,7 @@ public partial class EntryViewModel : ObservableObject, IDialogResult<EntryResul
                 var minutes = 0;
                 if (SelectedCode.NeedsHours && !EmployeeFormat.TryParseHours(HoursText, out minutes))
                 {
-                    Error = "Upišite sate, na primjer 8, 7,5 ili 7:30 (najviše 24).";
+                    Error = Loc.T("Upišite sate, na primjer 8, 7,5 ili 7:30 (najviše 24).");
                     return;
                 }
 

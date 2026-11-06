@@ -56,7 +56,7 @@ public sealed class WindowEmployeeDialogs : IEmployeeDialogs
 
     public async Task<string?> PickCsvAsync()
     {
-        var path = await _platform.ShowOpenFileDialogAsync("Izaberite listu radnika (CSV)", new Dictionary<string, List<string>> { ["CSV"] = new() { "csv", "txt" } });
+        var path = await _platform.ShowOpenFileDialogAsync(Loc.T("Izaberite listu radnika (CSV)"), new Dictionary<string, List<string>> { ["CSV"] = new() { "csv", "txt" } });
         return path == null ? null : await File.ReadAllTextAsync(path);
     }
 
@@ -103,7 +103,7 @@ public sealed class SheetFileSaver : ISheetFileSaver
             var types = format == "pdf"
                 ? new Dictionary<string, List<string>> { ["PDF"] = new() { "pdf" } }
                 : new Dictionary<string, List<string>> { ["Excel"] = new() { "xlsx" } };
-            var path = await _platform.ShowSaveFileDialogAsync("Sačuvaj šihtaricu", file.FileName, types);
+            var path = await _platform.ShowSaveFileDialogAsync(Loc.T("Sačuvaj šihtaricu"), file.FileName, types);
             if (path == null) return FileSaveResult.Cancelled;
 
             await File.WriteAllBytesAsync(path, file.Bytes);
@@ -112,13 +112,13 @@ public sealed class SheetFileSaver : ISheetFileSaver
         catch (ApiException ex)
         {
             _logger.LogWarning(ex, "The printed sheet was refused ({Code})", ex.Code);
-            return new FileSaveResult(null, ex.Code == "no-team" ? "Nikome nisu dodijeljeni vaši nadzor ni odobravanje." : ex.Message);
+            return new FileSaveResult(null, ex.Code == "no-team" ? Loc.T("Nikome nisu dodijeljeni vaši nadzor ni odobravanje.") : ex.Message);
         }
         catch (Exception ex)
         {
             // A garbled answer, a full disk, a file that is open elsewhere: all the same to the person
             _logger.LogWarning(ex, "The printed sheet could not be produced or saved");
-            return new FileSaveResult(null, "Datoteka nije sačuvana: " + ex.Message);
+            return new FileSaveResult(null, Loc.T("Datoteka nije sačuvana: ") + ex.Message);
         }
     }
 }
@@ -238,7 +238,7 @@ public sealed class PendingListViewModel : ObservableObject
 
     public bool IsEmpty => Items.Count == 0;
 
-    public string TabText => Count > 0 ? $"Za odobravanje ({Count})" : "Za odobravanje";
+    public string TabText => Count > 0 ? Loc.F("Za odobravanje ({0})", Count) : Loc.T("Za odobravanje");
 
     public void Clear()
     {

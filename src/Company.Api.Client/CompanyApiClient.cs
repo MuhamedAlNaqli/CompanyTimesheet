@@ -79,6 +79,10 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public bool HasToken => _token != null;
 
+    private volatile string _language = "bs";
+
+    public void UseLanguage(string language) => _language = language == "en" ? "en" : "bs";
+
     public void UseToken(string? token) => _token = string.IsNullOrWhiteSpace(token) ? null : token;
 
     public async Task<LoginResultDto> LoginAsync(string username, string password, bool remember, CancellationToken ct = default)
@@ -271,6 +275,7 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
     {
         using var request = new HttpRequestMessage(method, url);
         request.Headers.TryAddWithoutValidation(ApiHeaders.RequestedWith, ApiHeaders.RequestedWithValue);
+        request.Headers.TryAddWithoutValidation("Accept-Language", _language);
         if (_token is { } token) request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         if (body != null) request.Content = JsonContent.Create(body, body.GetType());
 

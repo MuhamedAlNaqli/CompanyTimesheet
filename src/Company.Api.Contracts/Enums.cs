@@ -88,6 +88,13 @@ public static class BosnianTexts
         "Januar", "Februar", "Mart", "April", "Maj", "Juni", "Juli", "August", "Septembar", "Oktobar", "Novembar", "Decembar"
     };
 
+    public static readonly string[] MonthNamesEnglish =
+    {
+        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+    };
+
+    public static string MonthEnglish(int month) => MonthNamesEnglish[month - 1];
+
     /// <summary>"Septembar 2026."</summary>
     public static string Month(int year, int month) => $"{MonthNames[month - 1]} {year}.";
 

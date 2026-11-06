@@ -54,9 +54,9 @@ public sealed partial class DeputiesViewModel : ObservableObject
     /// <summary>The request the form describes, or the reason it cannot be sent</summary>
     public (AddDeputyRequest? Request, string? Problem) ToRequest()
     {
-        if (SelectedCandidate == null) return (null, "Izaberite zamjenu.");
-        if (From == null || To == null) return (null, "Izaberite period zamjene.");
-        if (To < From) return (null, "Kraj perioda je prije početka.");
+        if (SelectedCandidate == null) return (null, Loc.T("Izaberite zamjenu."));
+        if (From == null || To == null) return (null, Loc.T("Izaberite period zamjene."));
+        if (To < From) return (null, Loc.T("Kraj perioda je prije početka."));
         return (new AddDeputyRequest(SelectedCandidate.Code, DateOnly.FromDateTime(From.Value), DateOnly.FromDateTime(To.Value)), null);
     }
 }

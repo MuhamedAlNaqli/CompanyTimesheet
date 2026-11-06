@@ -19,13 +19,13 @@ public sealed class AdminRow
         Credential = credential;
         Code = employee.Code;
         Name = employee.Name;
-        StatusText = employee.IsActive ? "Aktivan" : "Neaktivan";
+        StatusText = employee.IsActive ? Loc.T("Aktivan") : Loc.T("Neaktivan");
         IsActive = employee.IsActive;
         SupervisorText = employee.SupervisorCode is { Length: > 0 } s ? names.GetValueOrDefault(s, s) : "—";
         UsernameText = credential == null
-            ? "bez korisničkog imena"
-            : credential.Username + (credential.LockedUntilUtc != null ? " (zaključan)" : credential.MustChangePassword ? " (mora promijeniti lozinku)" : "");
-        RolesText = employee.IsAdmin ? "Administrator" : "";
+            ? Loc.T("bez korisničkog imena")
+            : credential.Username + (credential.LockedUntilUtc != null ? Loc.T(" (zaključan)") : credential.MustChangePassword ? Loc.T(" (mora promijeniti lozinku)") : "");
+        RolesText = employee.IsAdmin ? Loc.T("Administrator") : "";
         SearchKey = $"{employee.Code} {employee.Name} {credential?.Username}".ToLowerInvariant();
     }
 
@@ -94,7 +94,7 @@ public sealed partial class OrgNode : ObservableObject
 
     public bool ShowChildren => HasChildren && IsExpanded;
 
-    public string Caption => Descendants == 0 ? Code : $"{Code} · podređenih: {Descendants}";
+    public string Caption => Descendants == 0 ? Code : Loc.F("{0} · podređenih: {1}", Code, Descendants);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowChildren))]
@@ -186,14 +186,14 @@ public sealed partial class AdminViewModel : ObservableObject
         _all = employees.Select(e => new AdminRow(e, credentials.GetValueOrDefault(e.Code), names)).ToList();
 
         var without = _all.Count(r => r.IsActive && !r.HasUsername);
-        SummaryText = $"Zaposlenika: {_all.Count}. Aktivnih bez korisničkog imena: {without}.";
+        SummaryText = Loc.F("Zaposlenika: {0}. Aktivnih bez korisničkog imena: {1}.", _all.Count, without);
         ApplyFilter();
         BuildChart();
 
         var codes = await client.GetCodesAsync();
         Codes.Clear();
         foreach (var code in codes.OrderBy(c => c.Code)) Codes.Add(new CodeRow(code));
-        CodesSummary = $"Šifara: {Codes.Count}, isključenih: {Codes.Count(c => !c.IsActive)}. Nova šifra odmah postaje dostupna svim zaposlenicima, bez nove verzije programa.";
+        CodesSummary = Loc.F("Šifara: {0}, isključenih: {1}. Nova šifra odmah postaje dostupna svim zaposlenicima, bez nove verzije programa.", Codes.Count, Codes.Count(c => !c.IsActive));
     }
 
     /// <summary>
@@ -243,26 +243,26 @@ public sealed partial class AdminViewModel : ObservableObject
     /// <summary>The text for a refusal of the server, in Bosnian</summary>
     public static string Refusal(ApiException ex) => ex.Code switch
     {
-        "chart-cycle" => "To bi napravilo krug u hijerarhiji: neko bi postao svoj vlastiti nadređeni.",
-        "chart-invalid" => "Hijerarhija ne bi bila ispravna.",
-        "has-reports" => "Ta osoba još ima podređene ili šihtarice koje čekaju njeno odobrenje. Prvo ih premjestite.",
-        "last-admin" => "To je posljednji administrator koji se može prijaviti.",
-        "unknown-person" => "Nadređeni ili zamjenik nije zaposlenik.",
-        "username-taken" => "Drugi zaposlenik već ima to korisničko ime.",
-        "invalid-username" => "Korisničko ime ima 3 do 50 znakova: slova, cifre, tačka, crtica ili podvlaka.",
-        "weak-password" => "Lozinka mora imati najmanje 10 znakova i ne smije biti jednaka korisničkom imenu.",
-        "name-required" => "Ime ne smije biti prazno.",
-        "code-taken" => "Ta šifra već pripada drugoj osobi.",
-        "invalid-code" => "Šifra može imati slova, cifre, crticu, tačku ili podvlaku (najviše 10 znakova).",
-        "invalid-email" => "Adresa e-pošte nije ispravna.",
-        "overlap" => "Već postoji zamjena za dio ovog perioda. Prvo je uklonite.",
-        "invalid-period" => "Period nije ispravan: kraj je prije početka, već je prošao ili je duži od godine.",
-        "invalid-deputy" => "Niko ne može biti svoja zamjena.",
-        "code-exists" => "Ta šifra već postoji.",
-        "system-code" => "Program koristi tu šifru u svojim pravilima: može se samo preimenovati.",
-        "code-in-use" => "Šihtarice već koriste tu šifru, pa joj se boja i vrsta unosa ne mogu mijenjati. Isključite je i dodajte novu.",
-        "overtime-code" => "Šifre za prekovremeni rad dolaze s programom: prekovremeni se računa iz intervala.",
-        "invalid-kind" => "Boja ili vrsta unosa nisu ispravni.",
+        "chart-cycle" => Loc.T("To bi napravilo krug u hijerarhiji: neko bi postao svoj vlastiti nadređeni."),
+        "chart-invalid" => Loc.T("Hijerarhija ne bi bila ispravna."),
+        "has-reports" => Loc.T("Ta osoba još ima podređene ili šihtarice koje čekaju njeno odobrenje. Prvo ih premjestite."),
+        "last-admin" => Loc.T("To je posljednji administrator koji se može prijaviti."),
+        "unknown-person" => Loc.T("Nadređeni ili zamjenik nije zaposlenik."),
+        "username-taken" => Loc.T("Drugi zaposlenik već ima to korisničko ime."),
+        "invalid-username" => Loc.T("Korisničko ime ima 3 do 50 znakova: slova, cifre, tačka, crtica ili podvlaka."),
+        "weak-password" => Loc.T("Lozinka mora imati najmanje 10 znakova i ne smije biti jednaka korisničkom imenu."),
+        "name-required" => Loc.T("Ime ne smije biti prazno."),
+        "code-taken" => Loc.T("Ta šifra već pripada drugoj osobi."),
+        "invalid-code" => Loc.T("Šifra može imati slova, cifre, crticu, tačku ili podvlaku (najviše 10 znakova)."),
+        "invalid-email" => Loc.T("Adresa e-pošte nije ispravna."),
+        "overlap" => Loc.T("Već postoji zamjena za dio ovog perioda. Prvo je uklonite."),
+        "invalid-period" => Loc.T("Period nije ispravan: kraj je prije početka, već je prošao ili je duži od godine."),
+        "invalid-deputy" => Loc.T("Niko ne može biti svoja zamjena."),
+        "code-exists" => Loc.T("Ta šifra već postoji."),
+        "system-code" => Loc.T("Program koristi tu šifru u svojim pravilima: može se samo preimenovati."),
+        "code-in-use" => Loc.T("Šihtarice već koriste tu šifru, pa joj se boja i vrsta unosa ne mogu mijenjati. Isključite je i dodajte novu."),
+        "overtime-code" => Loc.T("Šifre za prekovremeni rad dolaze s programom: prekovremeni se računa iz intervala."),
+        "invalid-kind" => Loc.T("Boja ili vrsta unosa nisu ispravni."),
         _ => ex.Message
     };
 }
@@ -289,8 +289,8 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
         _row = row;
         var employee = row?.Employee ?? new EmployeeDto("", "", true, null, false, null, false, null, null, Array.Empty<string>());
         IsNew = row == null;
-        Title = IsNew ? "Nova osoba" : $"{employee.Name} · {employee.Code}";
-        People = new[] { new PersonOption("", "(niko)") }
+        Title = IsNew ? Loc.T("Nova osoba") : $"{employee.Name} · {employee.Code}";
+        People = new[] { new PersonOption("", Loc.T("(niko)")) }
             .Concat(everybody.Where(e => e.Code != employee.Code).OrderBy(e => e.Name).Select(e => new PersonOption(e.Code, $"{e.Name} · {e.Code}"))).ToList();
 
         Name = employee.Name;
@@ -339,15 +339,15 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
     [RelayCommand]
     private void Save()
     {
-        if (string.IsNullOrWhiteSpace(Name)) { Error = "Ime ne smije biti prazno."; return; }
-        if (ActiveFrom != null && ActiveTo != null && ActiveTo < ActiveFrom) { Error = "Kraj zaposlenja je prije početka."; return; }
+        if (string.IsNullOrWhiteSpace(Name)) { Error = Loc.T("Ime ne smije biti prazno."); return; }
+        if (ActiveFrom != null && ActiveTo != null && ActiveTo < ActiveFrom) { Error = Loc.T("Kraj zaposlenja je prije početka."); return; }
 
         // A user name needs a password, and the other way round, so nobody is left with half a sign-in
         var hasName = Username.Trim().Length > 0;
         var hasPassword = NewPassword.Length > 0;
-        if (hasPassword && !hasName) { Error = "Upišite korisničko ime uz lozinku."; return; }
-        if (!HasCredentials && hasName && !hasPassword) { Error = "Novo korisničko ime treba prvu lozinku."; return; }
-        if (hasPassword && NewPassword.Length < 10) { Error = "Lozinka mora imati najmanje 10 znakova."; return; }
+        if (hasPassword && !hasName) { Error = Loc.T("Upišite korisničko ime uz lozinku."); return; }
+        if (!HasCredentials && hasName && !hasPassword) { Error = Loc.T("Novo korisničko ime treba prvu lozinku."); return; }
+        if (hasPassword && NewPassword.Length < 10) { Error = Loc.T("Lozinka mora imati najmanje 10 znakova."); return; }
 
         if (IsNew)
         {

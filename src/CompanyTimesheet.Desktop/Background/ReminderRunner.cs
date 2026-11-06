@@ -33,6 +33,8 @@ internal static class ReminderRunner
         var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("ReminderRunner");
         try
         {
+            // This run has no window and no sign-in: the language is the one this computer used last
+            Loc.Initialize(EmployeePreferences.LoadLanguage());
             var exePath = Environment.ProcessPath ?? "";
             if (Array.Exists(args, a => a == TestArgument))
             {

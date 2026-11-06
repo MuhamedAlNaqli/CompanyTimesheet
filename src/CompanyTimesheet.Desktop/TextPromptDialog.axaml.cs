@@ -45,7 +45,7 @@ public partial class TextPromptViewModel : ObservableObject, IDialogResult<strin
     {
         if (string.IsNullOrWhiteSpace(Text))
         {
-            Error = "Upišite tekst.";
+            Error = Loc.T("Upišite tekst.");
             return;
         }
 

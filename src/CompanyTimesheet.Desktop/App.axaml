@@ -56,6 +56,8 @@
                     <SolidColorBrush x:Key="AppWarningSoft" Color="#FFFEF3DC"/>
                     <SolidColorBrush x:Key="AppWarningBorder" Color="#FFF5D08A"/>
                     <SolidColorBrush x:Key="AppOverlay" Color="#80000000"/>
+                    <SolidColorBrush x:Key="AppWeekendBg" Color="#FFFDEDED"/>
+                    <SolidColorBrush x:Key="AppHolidayBg" Color="#FFFFF1E0"/>
                     <SolidColorBrush x:Key="ThemeAccentBrush" Color="#FF64748B"/>
                     <SolidColorBrush x:Key="MaterialPrimaryMidBrush" Color="#FF0F766E"/>
                     <SolidColorBrush x:Key="MaterialPrimaryLightBrush" Color="#FF14A398"/>
@@ -100,6 +102,8 @@
                     <SolidColorBrush x:Key="AppWarningSoft" Color="#FF3A2D12"/>
                     <SolidColorBrush x:Key="AppWarningBorder" Color="#FF7A5A1A"/>
                     <SolidColorBrush x:Key="AppOverlay" Color="#B0000000"/>
+                    <SolidColorBrush x:Key="AppWeekendBg" Color="#FF3A1D20"/>
+                    <SolidColorBrush x:Key="AppHolidayBg" Color="#FF3A2A14"/>
                     <SolidColorBrush x:Key="ThemeAccentBrush" Color="#FF8FA0AB"/>
                     <SolidColorBrush x:Key="MaterialPrimaryMidBrush" Color="#FF0D8077"/>
                     <SolidColorBrush x:Key="MaterialPrimaryLightBrush" Color="#FF5EEAD4"/>

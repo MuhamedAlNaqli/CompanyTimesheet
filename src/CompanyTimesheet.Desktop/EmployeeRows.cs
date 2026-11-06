@@ -26,11 +26,11 @@ public sealed class EmployeeDayRow
         IsWorkingDay = day.Type == DayKind.Working;
         CalendarEntriesText = string.Join("\n", day.Entries.Select(e => TimeCodes.Get(e.Code).Unit == CodeUnit.Hours
             ? (e.Code == Timesheet.Domain.Codes.RegularWork ? EmployeeFormat.Hours(e.Minutes) : $"{e.Code} · {EmployeeFormat.Hours(e.Minutes)}")
-            : $"{e.Code} {TimeCodeNames.Bs(e.Code)}"));
+            : $"{e.Code} {EmployeeFormat.CodeName(e.Code)}"));
         var overtimeMinutes = day.OvertimeAllocations.Sum(a => a.Minutes);
-        CalendarOvertimeText = overtimeMinutes == 0 ? "" : "Prek. " + EmployeeFormat.Hours(overtimeMinutes);
+        CalendarOvertimeText = overtimeMinutes == 0 ? "" : Loc.T("Prek. ") + EmployeeFormat.Hours(overtimeMinutes);
         EntriesText = string.Join("\n", day.Entries.Select(EmployeeFormat.Entry));
-        OvertimeText = string.Join("\n", day.OvertimeAllocations.Select(a => $"{a.Code} {TimeCodeNames.Bs(a.Code)}: {EmployeeFormat.Hours(a.Minutes)}"));
+        OvertimeText = string.Join("\n", day.OvertimeAllocations.Select(a => $"{a.Code} {EmployeeFormat.CodeName(a.Code)}: {EmployeeFormat.Hours(a.Minutes)}"));
         var mine = issues.Where(i => i.Date == day.Date).ToList();
         IssueCount = mine.Count;
         HasBlocking = mine.Any(i => i.Severity == IssueSeverity.Blocking);
@@ -42,14 +42,10 @@ public sealed class EmployeeDayRow
 
     // The cell of the calendar view
     public string DayNumber => Date.Day.ToString();
-    public IBrush CellBackground => Day.Type switch
-    {
-        DayKind.Weekend => Brush.Parse("#FDEDED"),
-        DayKind.Holiday => Brush.Parse("#FFF1E0"),
-        _ => Brushes.White
-    };
-    public IBrush CellBorder => Date == DateOnly.FromDateTime(DateTime.Today) ? Brush.Parse("#0F766E") : Brush.Parse("#E5E7EB");
-    public global::Avalonia.Thickness CellBorderThickness => new(Date == DateOnly.FromDateTime(DateTime.Today) ? 2 : 1);
+    // The colours of the cell come from the theme (see the "cal-cell" styles), so the calendar reads in the light and in the dark theme
+    public bool IsWeekendCell => Day.Type == DayKind.Weekend;
+    public bool IsHolidayCell => Day.Type == DayKind.Holiday;
+    public bool IsTodayCell => Date == DateOnly.FromDateTime(DateTime.Today);
     public string HolidayText => Day.HolidayName ?? "";
     public string CalendarEntriesText { get; private set; } = "";
     public string CalendarOvertimeText { get; private set; } = "";
@@ -84,7 +80,7 @@ public sealed class EmployeeOvertimeRow
         Record = record;
         Title = $"{EmployeeFormat.ShortDate(record.Date)} {record.Start:HH\\:mm}–{record.End:HH\\:mm} ({EmployeeFormat.Hours(record.TotalMinutes)})";
         Detail = string.Join(", ", record.Allocations.Select(a => $"{a.Code}: {EmployeeFormat.Hours(a.Minutes)}"))
-                 + (record.MinutesInNextMonth > 0 ? $" ({EmployeeFormat.Hours(record.MinutesInNextMonth)} se računa u sljedećem mjesecu)" : "");
+                 + (record.MinutesInNextMonth > 0 ? Loc.F(" ({0} se računa u sljedećem mjesecu)", EmployeeFormat.Hours(record.MinutesInNextMonth)) : "");
         Description = record.Description;
         HasConflict = record.HasRegularWindowConflict;
     }
@@ -101,7 +97,7 @@ public sealed class EmployeeIssueRow
     public EmployeeIssueRow(IssueDto issue)
     {
         Issue = issue;
-        Title = issue.RuleId + (issue.Severity == IssueSeverity.Blocking ? " · zaustavlja predaju" : " · upozorenje");
+        Title = issue.RuleId + (issue.Severity == IssueSeverity.Blocking ? Loc.T(" · zaustavlja predaju") : " · upozorenje");
         Message = issue.Message;
         IsBlocking = issue.Severity == IssueSeverity.Blocking;
     }
@@ -119,11 +115,11 @@ public sealed class PendingRow
     {
         Item = item;
         Title = item.EmployeeName;
-        Detail = $"{EmployeeFormat.Month(item.Year, item.Month)} · predano {item.SubmittedUtc.ToLocalTime():dd.MM.yyyy. HH:mm}"
-                 + (item.ActingForName is { Length: > 0 } acting ? $" · kao zamjena za {acting}" : "");
+        Detail = Loc.F("{0} · predano {1:dd.MM.yyyy. HH:mm}", EmployeeFormat.Month(item.Year, item.Month), item.SubmittedUtc.ToLocalTime())
+                 + (item.ActingForName is { Length: > 0 } acting ? Loc.F(" · kao zamjena za {0}", acting) : "");
         Warning = item.BlockingCount > 0
-            ? $"{item.BlockingCount} primjedbi koje zaustavljaju predaju"
-            : item.WarningCount > 0 ? $"{item.WarningCount} upozorenja" : "";
+            ? Loc.F("{0} primjedbi koje zaustavljaju predaju", item.BlockingCount)
+            : item.WarningCount > 0 ? Loc.F("{0} upozorenja", item.WarningCount) : "";
     }
 
     public PendingApprovalDto Item { get; }
@@ -140,7 +136,7 @@ public sealed class DeputyRow
     {
         Deputy = deputy;
         Id = deputy.Id;
-        Title = forOthers ? $"Zamjenjujete: {deputy.ApproverName}" : $"Zamjenjuje vas: {deputy.DeputyName}";
+        Title = forOthers ? Loc.F("Zamjenjujete: {0}", deputy.ApproverName) : Loc.F("Zamjenjuje vas: {0}", deputy.DeputyName);
         Period = $"{EmployeeFormat.Date(deputy.From)} – {EmployeeFormat.Date(deputy.To)}";
         CanRemove = !forOthers;
     }
@@ -161,8 +157,8 @@ public sealed class RevisionRow
     {
         Revision = revision;
         Number = revision.Revision;
-        Title = $"Verzija {revision.Revision}";
-        Detail = $"predano {revision.SubmittedUtc.ToLocalTime():dd.MM.yyyy. HH:mm}";
+        Title = Loc.F("Verzija {0}", revision.Revision);
+        Detail = Loc.F("predano {0:dd.MM.yyyy. HH:mm}", revision.SubmittedUtc.ToLocalTime());
     }
 
     public RevisionDto Revision { get; }
@@ -177,9 +173,9 @@ public sealed class MessageRow
     public MessageRow(MessageDto message, bool canAnswer)
     {
         Message = message;
-        Header = $"{message.FromName} (predaja {message.Revision})";
+        Header = Loc.F("{0} (predaja {1})", message.FromName, message.Revision);
         Text = message.Text;
-        AnswerText = string.IsNullOrWhiteSpace(message.Answer) ? "" : "Odgovor: " + message.Answer;
+        AnswerText = string.IsNullOrWhiteSpace(message.Answer) ? "" : Loc.T("Odgovor: ") + message.Answer;
         CanAnswer = canAnswer && string.IsNullOrWhiteSpace(message.Answer);
     }
 
@@ -195,8 +191,8 @@ public sealed class HistoryRow
 {
     public HistoryRow(HistoryDto item)
     {
-        var onBehalf = item.OnBehalfOf == null ? "" : $" (u ime {item.OnBehalfOf})";
-        Title = $"{item.AtUtc.ToLocalTime():dd.MM.yyyy. HH:mm} · {EmployeeFormat.HistoryKind(item.Kind)}";
+        var onBehalf = item.OnBehalfOf == null ? "" : Loc.F(" (u ime {0})", item.OnBehalfOf);
+        Title = $"{item.AtUtc.ToLocalTime().ToString(Loc.IsEnglish ? "dd/MM/yyyy HH:mm" : "dd.MM.yyyy. HH:mm")} · {EmployeeFormat.HistoryKind(item.Kind)}";
         Detail = item.ActorName + onBehalf + (string.IsNullOrWhiteSpace(item.Text) ? "" : ": " + item.Text);
     }
 

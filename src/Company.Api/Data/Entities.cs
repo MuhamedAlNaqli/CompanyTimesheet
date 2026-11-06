@@ -39,6 +39,9 @@ public class Employee
     /// <summary>The colour palette the person chose (see UiPreferences); null is the default</summary>
     public string? Palette { get; set; }
 
+    /// <summary>"bs" or "en": the language of the screen and of the reminder mails of the person; null is Bosnian</summary>
+    public string? Language { get; set; }
+
     public List<EmployeeAccount> Accounts { get; set; } = new();
 }
 
