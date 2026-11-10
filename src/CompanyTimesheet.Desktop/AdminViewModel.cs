@@ -24,7 +24,7 @@ public sealed class AdminRow
         SupervisorText = employee.SupervisorCode is { Length: > 0 } s ? names.GetValueOrDefault(s, s) : "—";
         UsernameText = credential == null
             ? Loc.T("bez korisničkog imena")
-            : credential.Username + (credential.LockedUntilUtc != null ? Loc.T(" (zaključan)") : credential.MustChangePassword ? Loc.T(" (mora promijeniti lozinku)") : "");
+            : credential.Username + (credential.ResetRequestedUtc != null ? Loc.T(" (traži novu lozinku)") : credential.LockedUntilUtc != null ? Loc.T(" (zaključan)") : credential.MustChangePassword ? Loc.T(" (mora promijeniti lozinku)") : "");
         RolesText = employee.IsAdmin ? Loc.T("Administrator") : "";
         SearchKey = $"{employee.Code} {employee.Name} {credential?.Username}".ToLowerInvariant();
     }
@@ -48,6 +48,8 @@ public sealed class AdminRow
     public string RolesText { get; }
 
     public bool HasUsername => Credential != null;
+
+    public bool ResetRequested => Credential?.ResetRequestedUtc != null;
 
     public string SearchKey { get; }
 }

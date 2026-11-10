@@ -104,6 +104,38 @@ public class PasswordLoginTests
     }
 
     [TestMethod]
+    public async Task AForgottenPassword_IsRequested_AndTheAdministratorSetsATemporaryOne()
+    {
+        using var factory = Start();
+        var admin = await AdminAsync(factory);
+        await admin.PutAsJsonAsync("/api/admin/employees/Z-001/credentials", new SetCredentialsRequest("amra", "Start-password-1", false));
+        var (amra, _) = await SignIn(factory, "amra", "Start-password-1");
+
+        // The answer is the same for a name that exists and one that does not
+        var anonymous = Anonymous(factory);
+        Assert.AreEqual(HttpStatusCode.OK, (await anonymous.PostAsJsonAsync("/api/auth/request-reset", new ResetRequestDto("amra"))).StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, (await anonymous.PostAsJsonAsync("/api/auth/request-reset", new ResetRequestDto("nobody"))).StatusCode);
+
+        var listed = (await admin.GetFromJsonAsync<List<CredentialDto>>("/api/admin/credentials"))!;
+        Assert.IsNotNull(listed.Single(c => c.Username == "amra").ResetRequestedUtc, "the administrator sees the request");
+        Assert.IsNull(listed.Single(c => c.Username == "admin").ResetRequestedUtc);
+
+        var reset = await admin.PostAsync("/api/admin/employees/Z-001/reset-password", null);
+        Assert.AreEqual(HttpStatusCode.OK, reset.StatusCode, await reset.Content.ReadAsStringAsync());
+        var result = (await reset.Content.ReadFromJsonAsync<ResetResultDto>())!;
+        Assert.AreEqual(14, result.TemporaryPassword.Length);
+        Assert.IsFalse(result.EmailSent, "no mail server in the test");
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, (await amra.GetAsync("/api/me")).StatusCode, "the old session ends");
+        Assert.AreEqual("invalid-credentials", await ErrorCode(await anonymous.PostAsJsonAsync("/api/auth/login", new LoginRequest("amra", "Start-password-1")), HttpStatusCode.Unauthorized));
+        var (_, login) = await SignIn(factory, "amra", result.TemporaryPassword);
+        Assert.IsTrue(login.MustChangePassword, "the person chooses their own password at the next sign-in");
+
+        var after = (await admin.GetFromJsonAsync<List<CredentialDto>>("/api/admin/credentials"))!;
+        Assert.IsNull(after.Single(c => c.Username == "amra").ResetRequestedUtc, "the request is cleared");
+    }
+
+    [TestMethod]
     public async Task AWrongPasswordIsRefusedTheSameWayAsAnUnknownName_AndFiveInARowLockTheAccount()
     {
         using var factory = Start();

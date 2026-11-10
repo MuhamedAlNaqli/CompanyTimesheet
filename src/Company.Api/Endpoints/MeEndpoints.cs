@@ -59,6 +59,8 @@ public static class MeEndpoints
                 employee.Language));
         });
 
+        registered.MapGet("/me/overview", (ClaimsPrincipal user, EmployeeOverviewService service) => EndpointResults.Run(() => service.BuildAsync(Identities.EmployeeCode(user)!)));
+
         // What is due for the caller today: the rules are the domain library's, this only gathers the facts
         registered.MapGet("/reminders", (ClaimsPrincipal user, ReminderService service) => service.ForAsync(Identities.EmployeeCode(user)!));
 

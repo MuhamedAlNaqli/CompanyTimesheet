@@ -20,9 +20,13 @@ public sealed class CredentialService
     private readonly AuditService _audit;
     private readonly TimeProvider _time;
     private readonly EmployeeLookupCache _cache;
+    private readonly IMailSender _mail;
+    private readonly ILogger<CredentialService> _logger;
 
-    public CredentialService(CompanyDbContext db, AuditService audit, TimeProvider time, EmployeeLookupCache cache)
+    public CredentialService(CompanyDbContext db, AuditService audit, TimeProvider time, EmployeeLookupCache cache, IMailSender mail, ILogger<CredentialService> logger)
     {
+        _mail = mail;
+        _logger = logger;
         _db = db;
         _audit = audit;
         _time = time;
@@ -108,11 +112,31 @@ public sealed class CredentialService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// The employee asks, at the sign-in, for a new password. The answer is the same whether the user name exists or not, so nobody can
+    /// find out which user names there are; the administrator sees the request in the list of people.
+    /// </summary>
+    public async Task RequestResetAsync(string? username)
+    {
+        var name = AccountNormalizer.Normalize(username ?? "");
+        var credential = await _db.Credentials.FirstOrDefaultAsync(c => c.Username == name);
+        if (credential == null) { Passwords.SpendTheTimeOfACheck(name); return; }
+        if (!await _db.Employees.AnyAsync(e => e.Code == credential.EmployeeCode && e.IsActive)) return;
+
+        // One open request is enough; asking again does not change the time
+        if (credential.ResetRequestedUtc != null) return;
+
+        credential.ResetRequestedUtc = Now;
+        _audit.Record("PasswordResetRequested", "Credential", credential.EmployeeCode, null, actor: credential.EmployeeCode);
+        await _db.SaveChangesAsync();
+    }
+
     // ---- The administrator -------------------------------------------------------------------------------------------
 
     public async Task<IReadOnlyList<CredentialDto>> ListAsync() =>
         (await _db.Credentials.AsNoTracking().OrderBy(c => c.Username).ToListAsync())
-        .Select(c => new CredentialDto(c.EmployeeCode, c.Username, c.MustChange, c.LockedUntilUtc is { } until && until > Now ? DateTime.SpecifyKind(until, DateTimeKind.Utc) : null)).ToList();
+        .Select(c => new CredentialDto(c.EmployeeCode, c.Username, c.MustChange, c.LockedUntilUtc is { } until && until > Now ? DateTime.SpecifyKind(until, DateTimeKind.Utc) : null,
+            c.ResetRequestedUtc is { } asked ? DateTime.SpecifyKind(asked, DateTimeKind.Utc) : null)).ToList();
 
     /// <summary>Creates or replaces the user name and password of an employee. Every session of that employee ends.</summary>
     public async Task SetAsync(string employeeCode, SetCredentialsRequest request)
@@ -149,6 +173,57 @@ public sealed class CredentialService
         _audit.Record("CredentialsSet", "Credential", employeeCode, $"user name {username}, must change: {request.MustChange}");
         await _db.SaveChangesAsync();
         _cache.Clear();
+    }
+
+    /// <summary>
+    /// Sets a new temporary password that the employee must change at the next sign-in, ends their sessions and clears the request.
+    /// The password is also sent to the employee's e-mail when the server can send mail; the administrator always gets it to pass on.
+    /// </summary>
+    public async Task<ResetResultDto> ResetAsync(string employeeCode, bool sendMail = true)
+    {
+        var credential = await _db.Credentials.FirstOrDefaultAsync(c => c.EmployeeCode == employeeCode)
+                         ?? throw new SheetException(404, "not-found", "This employee has no user name.");
+        var employee = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Code == employeeCode)
+                       ?? throw new SheetException(404, "not-found", "The employee was not found.");
+
+        var temporary = Passwords.NewTemporary();
+        credential.PasswordHash = Passwords.Hash(temporary);
+        credential.MustChange = true;
+        credential.FailedCount = 0;
+        credential.LockedUntilUtc = null;
+        credential.ResetRequestedUtc = null;
+        credential.ChangedUtc = Now;
+        _db.AuthSessions.RemoveRange(await _db.AuthSessions.Where(s => s.EmployeeCode == employeeCode).ToListAsync());
+        _audit.Record("PasswordReset", "Credential", employeeCode, sendMail ? "temporary password" : "temporary password, from the server command");
+        await _db.SaveChangesAsync();
+
+        var sent = false;
+        if (sendMail && !string.IsNullOrWhiteSpace(employee.Email))
+        {
+            try
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                await _mail.SendAsync(employee.Email, "Nova privremena lozinka / New temporary password",
+                    $"Poštovani/a {employee.Name},\n\nKorisničko ime: {credential.Username}\nPrivremena lozinka: {temporary}\n\nNa prvoj prijavi bit ćete zamoljeni da izaberete vlastitu lozinku.\n\n"
+                    + $"Dear {employee.Name},\n\nUser name: {credential.Username}\nTemporary password: {temporary}\n\nYou will be asked to choose your own password at the first sign-in.", timeout.Token);
+                sent = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "The temporary password could not be mailed to {Code}", employeeCode);
+            }
+        }
+
+        return new ResetResultDto(temporary, sent, employee.Email);
+    }
+
+    /// <summary>The same by user name; the way out of a forgotten administrator password, from "Company.Api.dll --reset-password user"</summary>
+    public async Task<(string Username, string Password)> ResetByUsernameAsync(string username)
+    {
+        var credential = await _db.Credentials.AsNoTracking().FirstOrDefaultAsync(c => c.Username == AccountNormalizer.Normalize(username))
+                         ?? throw new SheetException(404, "not-found", "There is no such user name.");
+        var result = await ResetAsync(credential.EmployeeCode, sendMail: false);
+        return (credential.Username, result.TemporaryPassword);
     }
 
     public async Task RemoveAsync(string employeeCode)

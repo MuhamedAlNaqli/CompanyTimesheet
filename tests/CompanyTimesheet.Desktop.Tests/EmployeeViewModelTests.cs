@@ -164,6 +164,10 @@ public class EmployeeViewModelTests
 
         public Task LogoutAsync(CancellationToken ct = default) { Calls.Add("logout"); HasToken = false; return Task.CompletedTask; }
 
+        public Task<EmployeeOverviewDto> GetMyOverviewAsync(CancellationToken ct = default) { Calls.Add("overview"); return Task.FromResult(new EmployeeOverviewDto(2026, 11, SheetStatus.Draft, 8 * 60, 176 * 60, 2 * 60, 1200 * 60, 10 * 60, 9, 10, 1)); }
+
+        public Task RequestPasswordResetAsync(string username, CancellationToken ct = default) { Calls.Add($"reset-request {username}"); return Task.CompletedTask; }
+
         public Task ChangePasswordAsync(string current, string newPassword, CancellationToken ct = default)
         {
             Calls.Add($"change {current} -> {newPassword}");
@@ -207,6 +211,8 @@ public class EmployeeViewModelTests
             if (RefuseCredentialsWith != null) throw new ApiException(HttpStatusCode.Conflict, RefuseCredentialsWith, RefuseCredentialsWith);
             return Task.CompletedTask;
         }
+        public Task<ResetResultDto> ResetPasswordAsync(string code, CancellationToken ct = default) { Calls.Add($"reset {code}"); return Task.FromResult(new ResetResultDto("Temp-Pass-123", false, null)); }
+
         public Task RemoveCredentialsAsync(string code, CancellationToken ct = default) { Calls.Add($"remove {code}"); Maybe(); return Task.CompletedTask; }
         public AdminOverviewDto Overview { get; set; } = new(new OverviewPeopleDto(0, 0, 0, 0, 0, 0, 0), new OverviewCodesDto(0, 0, 0, 0, 0, 0, 0),
             new OverviewMonthDto(2026, 9, 0, 0, 0, 0, 0, 0), new OverviewMonthDto(2026, 8, 0, 0, 0, 0, 0, 0), new OverviewHolidaysDto(2026, 10, 10),
@@ -459,11 +465,35 @@ public class EmployeeViewModelTests
     }
 
     [TestMethod]
+    public async Task AnEmployee_StartsOnTheStartScreen_WithTheFiguresOfTheMonthAndTheYear()
+    {
+        var (vm, client, _, _, _) = Create();
+        client.IsApprover = true;
+
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsTrue(vm.InHome);
+        Assert.IsTrue(vm.ShowHomeBody);
+        Assert.IsFalse(vm.ShowDaysBody, "the days are not shown on the start screen");
+        Assert.AreEqual(6, vm.HomeCards.Count, "five figures and the approvals of an approver");
+        Assert.AreEqual("9 / 10", vm.HomeCards.Single(c => c.Title == "Predane šihtarice").Value);
+        Assert.IsTrue(vm.HomeCards.Single(c => c.Title == "Predane šihtarice").IsWarning, "a month was not handed in");
+
+        await vm.ShowMineCommand.ExecuteAsync(null);
+        Assert.IsFalse(vm.InHome);
+        Assert.IsTrue(vm.ShowDaysBody);
+
+        await vm.ShowHomeCommand.ExecuteAsync(null);
+        Assert.IsTrue(vm.ShowHomeBody);
+    }
+
+    [TestMethod]
     public async Task APersonWithNobodyAbove_ApprovesTheirOwnMonthFromTheirOwnScreen()
     {
         var (vm, client, dialogs, _, _) = Create();
         client.GetSheet = (y, m) => Task.FromResult(Sheets.Make(y, m, SheetStatus.Submitted, editable: false, canAct: true));
         await vm.LoadCommand.ExecuteAsync(null);
+        await vm.ShowMineCommand.ExecuteAsync(null); // the start screen is the first thing; these tests look at the own month
 
         Assert.IsTrue(vm.CanApproveOwn);
         await vm.ApproveCommand.ExecuteAsync(null);
@@ -746,6 +776,23 @@ public class EmployeeViewModelTests
         Assert.IsTrue(vm.IsConnected, "the month is loaded after the sign-in");
         Assert.AreEqual("token-1", tokens.Token, "remember me keeps the token");
         Assert.AreEqual("", vm.LoginPassword, "the password does not stay in memory longer than needed");
+    }
+
+    [TestMethod]
+    public async Task AForgottenPassword_IsRequestedWithTheUserName_AndNeedsOne()
+    {
+        var (vm, _, _, _, _) = CreateWith(out var session, out _);
+        session.PasswordSignIn = true;
+
+        await vm.ForgotPasswordCommand.ExecuteAsync(null);
+        StringAssert.Contains(vm.LoginError, "korisničko ime", "nothing is sent without a user name");
+        CollectionAssert.DoesNotContain(session.Calls, "reset-request ");
+
+        vm.LoginUsername = "amra";
+        await vm.ForgotPasswordCommand.ExecuteAsync(null);
+        CollectionAssert.Contains(session.Calls, "reset-request amra");
+        StringAssert.Contains(vm.LoginInfo, "Zahtjev je poslan");
+        Assert.AreEqual("", vm.LoginError);
     }
 
     [TestMethod]
@@ -1417,6 +1464,7 @@ public class EmployeeViewModelTests
         var (vm, client, _, _, _) = Create();
         client.IsApprover = true;
         await vm.LoadCommand.ExecuteAsync(null);
+        await vm.ShowMineCommand.ExecuteAsync(null); // the start screen is the first thing; these tests look at the own month
         Assert.IsTrue(vm.ShowDaysBody);
         Assert.IsFalse(vm.ShowHistoryBody);
         Assert.IsTrue(vm.InSheet);
@@ -1447,6 +1495,7 @@ public class EmployeeViewModelTests
         client.IsApprover = false;
 
         await vm.LoadCommand.ExecuteAsync(null);
+        await vm.ShowMineCommand.ExecuteAsync(null); // the start screen is the first thing; these tests look at the own month
 
         Assert.IsFalse(vm.IsApprover, "the approvals tab is bound to this");
         Assert.IsTrue(vm.ShowDaysBody);

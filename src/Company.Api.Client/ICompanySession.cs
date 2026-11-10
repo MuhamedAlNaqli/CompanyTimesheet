@@ -24,7 +24,13 @@ public interface ICompanySession
     /// <summary>Ends the session on the server. A server that cannot be reached does not stop the sign-out.</summary>
     Task LogoutAsync(CancellationToken ct = default);
 
+    /// <summary>The figures of the start screen</summary>
+    Task<EmployeeOverviewDto> GetMyOverviewAsync(CancellationToken ct = default);
+
     Task ChangePasswordAsync(string current, string newPassword, CancellationToken ct = default);
+
+    /// <summary>Asks the administrator for a new password; the answer is the same whether the user name exists or not</summary>
+    Task RequestPasswordResetAsync(string username, CancellationToken ct = default);
 }
 
 /// <summary>What the administrator does: the people, their user names and the import of the list of employees</summary>
@@ -45,6 +51,9 @@ public interface ICompanyAdminClient
     Task SetCredentialsAsync(string code, SetCredentialsRequest request, CancellationToken ct = default);
 
     Task RemoveCredentialsAsync(string code, CancellationToken ct = default);
+
+    /// <summary>A new temporary password for the employee; it is also mailed to them when the server can send mail</summary>
+    Task<ResetResultDto> ResetPasswordAsync(string code, CancellationToken ct = default);
 
     Task<AuditVerificationDto> VerifyAuditAsync(CancellationToken ct = default);
 

@@ -25,6 +25,23 @@ public partial class EmployeeViewModel
             await RunAdminAsync(() => Admin.LoadExtrasAsync(_admin));
     }
 
+    /// <summary>A new temporary password for a person who forgot theirs; the person changes it at the next sign-in</summary>
+    [RelayCommand]
+    private async Task ResetPasswordAsync(AdminRow? row)
+    {
+        if (row == null || !row.HasUsername) return;
+        if (!await _dialogs.ConfirmAsync(Loc.T("Nova lozinka"), Loc.F("Postaviti novu privremenu lozinku za {0}? Stara lozinka prestaje važiti, a osoba se odjavljuje.", row.Name))) return;
+
+        await RunAdminAsync(async () =>
+        {
+            var result = await _admin.ResetPasswordAsync(row.Code);
+            await Admin.RefreshAsync(_admin);
+            InfoText = result.EmailSent
+                ? Loc.F("Privremena lozinka za {0}: {1}. Poslana je i na {2}; osoba je mijenja pri prvoj prijavi.", row.Name, result.TemporaryPassword, result.Email ?? "")
+                : Loc.F("Privremena lozinka za {0}: {1}. Prenesite je osobi; ona je mijenja pri prvoj prijavi.", row.Name, result.TemporaryPassword);
+        });
+    }
+
     [RelayCommand]
     private Task ChangeHolidayYearAsync(string? delta) => RunAdminAsync(async () =>
     {

@@ -76,7 +76,27 @@ public sealed record CreateEmployeeRequest(
 /// <summary>The administrator creates or replaces an employee's user name and password. MustChange: the employee chooses their own at the first sign-in.</summary>
 public sealed record SetCredentialsRequest(string Username, string Password, bool MustChange = true);
 
-public sealed record CredentialDto(string EmployeeCode, string Username, bool MustChangePassword, DateTime? LockedUntilUtc);
+public sealed record CredentialDto(string EmployeeCode, string Username, bool MustChangePassword, DateTime? LockedUntilUtc, DateTime? ResetRequestedUtc = null);
+
+/// <summary>The figures of the start screen of an employee: this month, the year so far, and what waits to be approved</summary>
+public sealed record EmployeeOverviewDto(
+    int Year,
+    int Month,
+    SheetStatus Status,
+    int FundMinutes,
+    int ExpectedFundMinutes,
+    int MonthOvertimeMinutes,
+    int YearWorkedMinutes,
+    int YearOvertimeMinutes,
+    int PastMonthsHandedIn,
+    int PastMonths,
+    int PendingApprovals);
+
+/// <summary>The employee asks for a new password; only the user name is needed</summary>
+public sealed record ResetRequestDto(string Username);
+
+/// <summary>A temporary password the administrator set for an employee, and whether it was also sent to the employee's e-mail</summary>
+public sealed record ResetResultDto(string TemporaryPassword, bool EmailSent, string? Email);
 
 public sealed record CsvRequest(string Csv);
 

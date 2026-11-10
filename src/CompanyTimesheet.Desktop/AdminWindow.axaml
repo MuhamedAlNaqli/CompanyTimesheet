@@ -196,7 +196,7 @@
                     <ScrollViewer Grid.Row="1" IsVisible="{Binding Admin.ShowList}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <Grid MinWidth="640" RowDefinitions="Auto,*">
                         <Border Margin="20,0,20,0" Padding="0,8" BorderBrush="{DynamicResource AppBorderStrong}" BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="70,*,160,210,70">
+                            <Grid ColumnDefinitions="70,*,160,210,110">
                                 <TextBlock Text="{em:Tr 'Šifra'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                                 <TextBlock Grid.Column="1" Text="{em:Tr 'Ime i prezime'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
                                 <TextBlock Grid.Column="2" Text="{em:Tr 'Nadređeni'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AppTextMuted}"/>
@@ -209,7 +209,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="em:AdminRow">
                                         <Border BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,0,1" Padding="0,8">
-                                            <Grid ColumnDefinitions="70,*,160,210,70">
+                                            <Grid ColumnDefinitions="70,*,160,210,110">
                                                 <TextBlock Text="{Binding Code}" VerticalAlignment="Center" Foreground="{DynamicResource AppTextMuted}"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource AppTextStrong}" TextTrimming="CharacterEllipsis"/>
@@ -220,10 +220,16 @@
                                                     <TextBlock Text="{Binding UsernameText}" Foreground="{DynamicResource AppTextStrong}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding RolesText}" FontSize="11" Foreground="#B45309"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="4" Classes="icon" Width="32" Height="32" ToolTip.Tip="{em:Tr 'Uredi osobu'}" HorizontalAlignment="Right"
-                                                        Command="{Binding $parent[Window].DataContext.EditEmployeeCommand}" CommandParameter="{Binding}">
-                                                    <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
-                                                </Button>
+                                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <Button AutomationProperties.AutomationId="AdminResetPasswordButton" Classes="icon" Width="32" Height="32" IsVisible="{Binding HasUsername}" ToolTip.Tip="{em:Tr 'Postavi privremenu lozinku'}"
+                                                            Command="{Binding $parent[Window].DataContext.ResetPasswordCommand}" CommandParameter="{Binding}">
+                                                        <materialIcons:MaterialIcon Kind="KeyChange" Width="16" Height="16"/>
+                                                    </Button>
+                                                    <Button Classes="icon" Width="32" Height="32" ToolTip.Tip="{em:Tr 'Uredi osobu'}"
+                                                            Command="{Binding $parent[Window].DataContext.EditEmployeeCommand}" CommandParameter="{Binding}">
+                                                        <materialIcons:MaterialIcon Kind="PencilOutline" Width="16" Height="16"/>
+                                                    </Button>
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>

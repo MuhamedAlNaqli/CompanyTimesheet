@@ -46,6 +46,7 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<CredentialService>();
 builder.Services.AddScoped<DeputyService>();
 builder.Services.AddScoped<AdminOverviewService>();
+builder.Services.AddScoped<EmployeeOverviewService>();
 
 // Reminder mails: built, switched off until Features:EmailReminders is true (and Smtp is set)
 builder.Services.TryAddSingleton<IMailSender, SmtpMailSender>();
@@ -83,6 +84,26 @@ await using (var scope = app.Services.CreateAsyncScope())
     // Only with Demo:Seed (a test on one PC): sample people and months in an otherwise empty database
     if (!migrateOnly) await DemoData.RunAsync(app.Services, app.Configuration, app.Logger);
     if (migrateOnly) return;
+
+    // The way out of a forgotten administrator password: "Company.Api.dll --reset-password <user name>" writes a temporary one and stops
+    var resetAt = Array.IndexOf(args, "--reset-password");
+    if (resetAt >= 0)
+    {
+        var who = resetAt + 1 < args.Length ? args[resetAt + 1] : "";
+        try
+        {
+            var (user, password) = await scope.ServiceProvider.GetRequiredService<CredentialService>().ResetByUsernameAsync(who);
+            Console.WriteLine($"Temporary password for {user}: {password}");
+            Console.WriteLine("It must be changed at the next sign-in.");
+        }
+        catch (SheetException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            Environment.ExitCode = 1;
+        }
+
+        return;
+    }
 }
 
 // What goes wrong unexpectedly is logged and answered in the same form as every other refusal, not as a page

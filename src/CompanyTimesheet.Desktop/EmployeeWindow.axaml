@@ -46,6 +46,12 @@
 
         <!-- Own timesheet or timesheets waiting for approval -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConnected}">
+            <Button Name="EmpHomeTab" Command="{Binding ShowHomeCommand}" IsVisible="{Binding !IsAdmin}" Classes.secondary="{Binding !InHome}" Classes.primary="{Binding InHome}" Padding="16,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="18" Height="18"/>
+                    <TextBlock Text="{em:Tr 'Početna'}"/>
+                </StackPanel>
+            </Button>
             <Button Name="EmpMineTab" Command="{Binding ShowMineCommand}" Classes.secondary="{Binding !InSheet}" Classes.primary="{Binding InSheet}" Padding="16,8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="AccountClock" Width="18" Height="18"/>
@@ -322,6 +328,28 @@
                     </ScrollViewer>
                 </Grid>
             </Border>
+
+            <!-- Start screen: this month and the year in a few figures -->
+            <ScrollViewer Grid.ColumnSpan="3" IsVisible="{Binding ShowHomeBody}">
+                <ItemsControl Name="EmpHomeCards" ItemsSource="{Binding HomeCards}" Margin="0,0,0,12">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="em:StatCard">
+                            <Border Classes="stat" Classes.warn="{Binding IsWarning}" Width="290" MinHeight="118" Margin="0,0,14,14">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppTextMuted}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Value}" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource AppTextStrong}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Caption}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AppTextMuted}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
 
             <!-- The history of the own month: the versions that were submitted and who did what -->
             <Border Grid.ColumnSpan="3" IsVisible="{Binding ShowHistoryBody}" Background="{DynamicResource AppSurface}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="12">

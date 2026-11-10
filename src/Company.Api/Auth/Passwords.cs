@@ -48,6 +48,15 @@ public static class Passwords
             ? "A user name has 3 to 50 characters: letters, digits, dot, dash or underscore."
             : null;
 
+    /// <summary>A temporary password for a reset: 14 characters without the ones that are easy to mix up (0/O, 1/l/I)</summary>
+    public static string NewTemporary()
+    {
+        const string alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var chars = new char[14];
+        for (var i = 0; i < chars.Length; i++) chars[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
+        return new string(chars);
+    }
+
     public static string NewToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
     public static string HashToken(string token) => Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));

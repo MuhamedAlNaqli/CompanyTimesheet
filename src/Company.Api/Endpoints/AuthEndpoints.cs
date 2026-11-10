@@ -17,6 +17,14 @@ public static class AuthEndpoints
         {
             app.MapPost("/api/auth/login", (LoginRequest request, CredentialService service) => Run(() => service.LoginAsync(request))).AllowAnonymous();
 
+            // A person who cannot sign in cannot be identified; the request says nothing about whether the user name exists
+            app.MapPost("/api/auth/request-reset", (ResetRequestDto request, CredentialService service) =>
+                Run(async () =>
+                {
+                    await service.RequestResetAsync(request.Username);
+                    return new { requested = true };
+                })).AllowAnonymous();
+
             // Allowed also while the password must be changed
             var signedIn = app.MapGroup("/api/auth").RequireAuthorization();
             signedIn.MapPost("/logout", async (ClaimsPrincipal user, CredentialService service) =>
@@ -42,6 +50,7 @@ public static class AuthEndpoints
                 await service.SetAsync(code, request);
                 return new { saved = true };
             }));
+        admin.MapPost("/employees/{code}/reset-password", (string code, CredentialService service) => Run(() => service.ResetAsync(code)));
         admin.MapDelete("/employees/{code}/credentials", (string code, CredentialService service) =>
             Run(async () =>
             {

@@ -269,6 +269,9 @@ public class EmployeeCredential
 
     public int FailedCount { get; set; }
 
+    /// <summary>When the employee asked for a new password at the sign-in; the administrator sets one and the request is cleared</summary>
+    public DateTime? ResetRequestedUtc { get; set; }
+
     public DateTime? LockedUntilUtc { get; set; }
 
     public DateTime ChangedUtc { get; set; }

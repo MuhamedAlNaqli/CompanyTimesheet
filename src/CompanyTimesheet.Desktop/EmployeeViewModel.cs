@@ -115,13 +115,13 @@ public partial class EmployeeViewModel : ObservableObject
 
     public bool ShowMineToolbar => IsConnected && InMine && !InHistory;
 
-    public bool InMine => !InApprovals && !InTeam && !InAdmin;
+    public bool InMine => !InApprovals && !InTeam && !InAdmin && !InHome;
 
     /// <summary>The "My timesheet" tab itself (not its history)</summary>
     public bool InSheet => InMine && !InHistory;
 
     /// <summary>The month, its totals and findings are on screen (not the team or the administrator's list)</summary>
-    public bool ShowSheetBody => !InTeam && !InAdmin;
+    public bool ShowSheetBody => !InTeam && !InAdmin && !InHome;
 
     /// <summary>The days, with the side column of totals and findings</summary>
     public bool ShowDaysBody => ShowSheetBody && !ShowHistoryBody;
@@ -138,7 +138,7 @@ public partial class EmployeeViewModel : ObservableObject
 
     public bool ShowTeamToolbar => IsConnected && InTeam;
 
-    public bool ShowMonthNav => IsConnected && !IsReviewing && !InAdmin;
+    public bool ShowMonthNav => IsConnected && !IsReviewing && !InAdmin && !InHome;
 
     /// <summary>A person with nobody above them decides on their own timesheet from their own screen</summary>
     public bool CanApproveOwn => CanAct && !IsReviewing && InMine;
@@ -151,13 +151,13 @@ public partial class EmployeeViewModel : ObservableObject
 
     partial void OnInfoTextChanged(string value) => OnPropertyChanged(nameof(HasInfo));
 
-    partial void OnInApprovalsChanged(bool value) => RaiseModeChanged();
+    partial void OnInApprovalsChanged(bool value) { if (value) InHome = false; RaiseModeChanged(); }
 
-    partial void OnInTeamChanged(bool value) => RaiseModeChanged();
+    partial void OnInTeamChanged(bool value) { if (value) InHome = false; RaiseModeChanged(); }
 
-    partial void OnInAdminChanged(bool value) => RaiseModeChanged();
+    partial void OnInAdminChanged(bool value) { if (value) InHome = false; RaiseModeChanged(); }
 
-    partial void OnInHistoryChanged(bool value) => RaiseModeChanged();
+    partial void OnInHistoryChanged(bool value) { if (value) InHome = false; RaiseModeChanged(); }
 
     partial void OnIsReviewingChanged(bool value) => RaiseModeChanged();
 
@@ -183,6 +183,7 @@ public partial class EmployeeViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowApprovalsHint));
         OnPropertyChanged(nameof(ShowListPane));
         OnPropertyChanged(nameof(ShowCalendarPane));
+        OnPropertyChanged(nameof(ShowHomeBody));
         OnPropertyChanged(nameof(ShowSignInForm));
     }
 
@@ -247,6 +248,13 @@ public partial class EmployeeViewModel : ObservableObject
                 IsAdmin = me.IsAdmin;
                 ApplyServerAppearance(me.ThemeMode, me.Palette, me.Language);
                 await LoadTimeCodesAsync();
+
+                // An employee starts on the start screen; the administrator has the administration
+                if (!me.IsAdmin)
+                {
+                    InHome = true;
+                    await LoadHomeAsync();
+                }
             }
 
             // An administrator only administers: no timesheet is loaded for them, the administration is all there is
@@ -548,6 +556,7 @@ public partial class EmployeeViewModel : ObservableObject
     [RelayCommand]
     private async Task ShowMineAsync()
     {
+        InHome = false;
         InApprovals = false;
         InTeam = false;
         InAdmin = false;
@@ -1075,6 +1084,8 @@ public partial class EmployeeViewModel : ObservableObject
         InTeam = false;
         InAdmin = false;
         InHistory = false;
+        InHome = false;
+        HomeCards.Clear();
         IsReviewing = false;
         IsViewingRevision = false;
         IsConnected = false;
@@ -1085,11 +1096,46 @@ public partial class EmployeeViewModel : ObservableObject
         InfoText = "";
     }
 
+    /// <summary>Text under the sign-in form that is not an error (the request for a new password was sent)</summary>
+    [ObservableProperty] private string _loginInfo = "";
+
+    /// <summary>The person who forgot the password asks the administrator for a new one; the answer does not say whether the user name exists</summary>
+    [RelayCommand]
+    private async Task ForgotPasswordAsync()
+    {
+        if (IsBusy) return;
+        LoginError = "";
+        LoginInfo = "";
+        if (LoginUsername.Trim().Length == 0) { LoginError = Loc.T("Upišite korisničko ime, pa zatražite novu lozinku."); return; }
+        if (!ApplyServerAddress()) return;
+
+        try
+        {
+            IsBusy = true;
+            await _session.RequestPasswordResetAsync(LoginUsername.Trim());
+            LoginInfo = Loc.T("Zahtjev je poslan. Administrator će vam postaviti privremenu lozinku.");
+        }
+        catch (ApiException ex)
+        {
+            LoginError = SignInRefusal(ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "The request for a new password failed");
+            LoginError = Loc.T("Zahtjev nije poslan: ") + ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     [RelayCommand]
     private async Task SignInAsync()
     {
         if (IsBusy) return;
         LoginError = "";
+        LoginInfo = "";
         if (LoginUsername.Trim().Length == 0 || LoginPassword.Length == 0)
         {
             LoginError = Loc.T("Unesite korisničko ime i lozinku.");

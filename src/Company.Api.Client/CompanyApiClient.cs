@@ -112,6 +112,11 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
     public Task ChangePasswordAsync(string current, string newPassword, CancellationToken ct = default) =>
         SendAsync<object>(HttpMethod.Post, "/api/auth/change-password", new ChangePasswordRequest(current, newPassword), ct);
 
+    public Task<EmployeeOverviewDto> GetMyOverviewAsync(CancellationToken ct = default) => GetAsync<EmployeeOverviewDto>("/api/me/overview", ct);
+
+    public Task RequestPasswordResetAsync(string username, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Post, "/api/auth/request-reset", new ResetRequestDto(username), ct);
+
     // ---- The administrator -------------------------------------------------------------------------------------------------
 
     public Task<List<EmployeeDto>> GetEmployeesAsync(CancellationToken ct = default) => GetAsync<List<EmployeeDto>>("/api/admin/employees", ct);
@@ -132,6 +137,9 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     public Task SetCredentialsAsync(string code, SetCredentialsRequest request, CancellationToken ct = default) =>
         SendAsync<object>(HttpMethod.Put, $"/api/admin/employees/{Uri.EscapeDataString(code)}/credentials", request, ct);
+
+    public Task<ResetResultDto> ResetPasswordAsync(string code, CancellationToken ct = default) =>
+        SendAsync<ResetResultDto>(HttpMethod.Post, $"/api/admin/employees/{Uri.EscapeDataString(code)}/reset-password", null, ct);
 
     public Task RemoveCredentialsAsync(string code, CancellationToken ct = default) =>
         SendAsync<object>(HttpMethod.Delete, $"/api/admin/employees/{Uri.EscapeDataString(code)}/credentials", null, ct);

@@ -54,7 +54,11 @@ PostgreSQL (production) / SQLite (development, tests)
 5. **First administrator.** `Bootstrap:AdminUsername` and `Bootstrap:AdminPassword` once; the password must be changed at the first sign-in.
    Remove them from the configuration afterwards.
 6. **Mail reminders** (optional): `Features:EmailReminders` with the `Smtp` section, and the e-mail address of each person.
-7. **Update order.** A release that adds a column (v0.1.5, v0.1.8) needs the new server first: it applies its migration when it starts.
+7. **Forgotten passwords.** An employee asks for a new password at the sign-in ("Zaboravili ste lozinku?"); the administrator sees the request
+   in the list of people and sets a temporary password (the key button), which is also mailed when the `Smtp` section is configured. If the
+   **administrator** forgets theirs, run on the server `Company.Api.dll --reset-password <user name>`: it prints a temporary password that must be
+   changed at the next sign-in. The e-mail address is required for every new person.
+8. **Update order.** A release that adds a column (v0.1.5, v0.1.8, v0.1.12) needs the new server first: it applies its migration when it starts.
 
 ## Limits to know about
 
