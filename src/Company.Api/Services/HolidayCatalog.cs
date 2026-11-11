@@ -22,6 +22,9 @@ public static class HolidayCatalog
         (11, 25, "Dan državnosti Bosne i Hercegovine")
     };
 
+    /// <summary>True when the holiday is one of the fixed ones as the server wrote it</summary>
+    public static bool IsBuiltIn(DateOnly date, string name) => Fixed.Any(f => f.Month == date.Month && f.Day == date.Day && f.Name == name);
+
     /// <summary>Writes the fixed holidays of every year in the list that has no holiday yet; returns how many were written</summary>
     public static async Task<int> SeedAsync(CompanyDbContext db, params int[] years)
     {

@@ -51,9 +51,6 @@
 
             <TextBlock Name="AdminError" Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                <Button Name="AdminRemoveUsernameButton" Command="{Binding RemoveUsernameCommand}" IsVisible="{Binding HasCredentials}" Classes="dialog secondary">
-                    <TextBlock Text="{em:Tr 'Ukloni korisničko ime'}"/>
-                </Button>
                 <Button Name="AdminCancelButton" Command="{Binding CancelCommand}" Classes="dialog secondary"><TextBlock Text="{em:Tr 'Odustani'}"/></Button>
                 <Button Name="AdminSaveButton" Command="{Binding SaveCommand}" Classes="dialog primary"><TextBlock Text="{em:Tr 'Sačuvaj'}"/></Button>
             </StackPanel>

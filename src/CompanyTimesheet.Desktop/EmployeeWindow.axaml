@@ -52,13 +52,13 @@
                     <TextBlock Text="{em:Tr 'Početna'}"/>
                 </StackPanel>
             </Button>
-            <Button Name="EmpMineTab" Command="{Binding ShowMineCommand}" Classes.secondary="{Binding !InSheet}" Classes.primary="{Binding InSheet}" Padding="16,8">
+            <Button Name="EmpMineTab" Command="{Binding ShowMineCommand}" IsVisible="{Binding !IsAdmin}" Classes.secondary="{Binding !InSheet}" Classes.primary="{Binding InSheet}" Padding="16,8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="AccountClock" Width="18" Height="18"/>
                     <TextBlock Text="{em:Tr 'Moja šihtarica'}"/>
                 </StackPanel>
             </Button>
-            <Button Name="EmpHistoryTab" Command="{Binding ShowHistoryCommand}" Classes.secondary="{Binding !InHistory}" Classes.primary="{Binding InHistory}" Padding="16,8"
+            <Button Name="EmpHistoryTab" Command="{Binding ShowHistoryCommand}" IsVisible="{Binding !IsAdmin}" Classes.secondary="{Binding !InHistory}" Classes.primary="{Binding InHistory}" Padding="16,8"
                     ToolTip.Tip="{em:Tr 'Poslane verzije i ko je šta radio s vašom šihtaricom'}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <materialIcons:MaterialIcon Kind="History" Width="18" Height="18"/>

@@ -244,6 +244,13 @@ public class EmployeeViewModelTests
             Codes.Add(added);
             return Task.FromResult(added);
         }
+        public Task DeleteCodeAsync(int code, CancellationToken ct = default)
+        {
+            Calls.Add($"delete-code {code}");
+            Maybe();
+            Codes.RemoveAll(c => c.Code == code);
+            return Task.CompletedTask;
+        }
         public Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default)
         {
             Calls.Add($"update-code {code} {request.NameBs} active={request.IsActive}");
@@ -924,6 +931,32 @@ public class EmployeeViewModelTests
         CollectionAssert.AreEqual(new[] { "Z-002" }, vm.Admin.Rows.Select(r => r.Code).ToArray());
         vm.Admin.Filter = "AMRA";
         CollectionAssert.AreEqual(new[] { "Z-001" }, vm.Admin.Rows.Select(r => r.Code).ToArray(), "also by user name, without regard to case");
+    }
+
+    [TestMethod]
+    public async Task AnAdministratorWhoApproves_SwitchesBetweenTheAdministrationAndTheTimesheetsOfTheTeam()
+    {
+        var (vm, client, _, _, _) = CreateWith(out _, out _, out var admin);
+        client.IsAdmin = true;
+        client.IsApprover = true;
+        admin.Employees = new() { Person("Z-001", "Amra Adžamija") };
+        await vm.LoadCommand.ExecuteAsync(null);
+
+        Assert.IsTrue(vm.InAdmin);
+        Assert.IsTrue(vm.CanSwitchWork);
+        Assert.IsTrue(vm.ShowAdminSections);
+
+        await vm.OpenTeamWorkCommand.ExecuteAsync(null);
+        Assert.IsTrue(vm.AdminShowsTeam);
+        Assert.IsTrue(vm.InApprovals);
+        Assert.IsFalse(vm.InAdmin);
+        Assert.IsFalse(vm.ShowAdminSections);
+
+        await vm.OpenAdminWorkCommand.ExecuteAsync(null);
+        Assert.IsFalse(vm.AdminShowsTeam);
+        Assert.IsTrue(vm.InAdmin);
+        Assert.IsFalse(vm.InApprovals);
+        Assert.IsTrue(vm.ShowAdminSections);
     }
 
     [TestMethod]

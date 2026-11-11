@@ -94,7 +94,7 @@ public partial class App : Application
 
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(EmployeeViewModel.IsConnected)) Dispatcher.UIThread.Post(SwitchWindow);
+        if (e.PropertyName is nameof(EmployeeViewModel.IsConnected) or nameof(EmployeeViewModel.AdminShowsTeam)) Dispatcher.UIThread.Post(SwitchWindow);
     }
 
     /// <summary>Signed in: the window of the role replaces the sign-in window. Signed out (or the session ended): the other way round.</summary>
@@ -105,8 +105,11 @@ public partial class App : Application
         Window next;
         if (_viewModel.IsConnected)
         {
-            if (current is not LoginWindow) return;
-            next = _viewModel.IsAdmin
+            // The administrator who looks at the timesheets of the team has the window of the employees
+            var wantsAdminWindow = _viewModel.IsAdmin && !_viewModel.AdminShowsTeam;
+            if (current is AdminWindow && wantsAdminWindow) return;
+            if (current is EmployeeWindow && !wantsAdminWindow) return;
+            next = wantsAdminWindow
                 ? new AdminWindow { DataContext = _viewModel }
                 : new EmployeeWindow { DataContext = _viewModel };
         }

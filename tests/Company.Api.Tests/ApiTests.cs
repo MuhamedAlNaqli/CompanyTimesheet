@@ -326,6 +326,33 @@ public class ReferenceDataTests
     }
 
     [TestMethod]
+    public async Task Holidays_ShouldMarkTheOnesTheServerWroteAsBuiltIn()
+    {
+        using var factory = new ApiFactory();
+        await factory.Admin.PostAsJsonAsync("/api/admin/holidays", new HolidayDto(new DateOnly(2031, 1, 1), "Nova godina"));
+        await factory.Admin.PostAsJsonAsync("/api/admin/holidays", new HolidayDto(new DateOnly(2031, 9, 9), "Moj praznik"));
+
+        var list = await factory.Admin.GetFromJsonAsync<List<HolidayDto>>("/api/admin/holidays/2031");
+        Assert.IsTrue(list!.Single(h => h.Date.Month == 1).IsBuiltIn);
+        Assert.IsFalse(list.Single(h => h.Date.Month == 9).IsBuiltIn);
+    }
+
+    [TestMethod]
+    public async Task Codes_ShouldBeDeletedOnlyWhenAddedByTheAdministratorAndNotUsed()
+    {
+        using var factory = new ApiFactory();
+        var add = await factory.Admin.PostAsJsonAsync("/api/admin/codes", new SaveCodeRequest(5001, "Probna", "Test", "Green", "Hours", true));
+        Assert.AreEqual(HttpStatusCode.OK, add.StatusCode);
+
+        Assert.AreEqual(HttpStatusCode.NoContent, (await factory.Admin.DeleteAsync("/api/admin/codes/5001")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await factory.Admin.DeleteAsync("/api/admin/codes/5001")).StatusCode);
+
+        var codes = await factory.Admin.GetFromJsonAsync<List<CodeDefinitionDto>>("/api/admin/codes");
+        var system = codes!.First(c => c.IsSystem);
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await factory.Admin.DeleteAsync($"/api/admin/codes/{system.Code}")).StatusCode);
+    }
+
+    [TestMethod]
     public async Task ReligiousHolidays_ShouldBePerEmployee()
     {
         using var factory = new ApiFactory();

@@ -25,6 +25,30 @@ public partial class EmployeeViewModel
             await RunAdminAsync(() => Admin.LoadExtrasAsync(_admin));
     }
 
+    /// <summary>The administrator who also approves: the window of the timesheets of the people below, with the list of what waits for a decision</summary>
+    [RelayCommand]
+    private async Task OpenTeamWorkAsync()
+    {
+        if (!CanSwitchWork) return;
+        AdminShowsTeam = true;
+        InAdmin = false;
+        await ShowApprovalsAsync();
+    }
+
+    /// <summary>Back to the administration</summary>
+    [RelayCommand]
+    private async Task OpenAdminWorkAsync()
+    {
+        InApprovals = false;
+        InTeam = false;
+        IsReviewing = false;
+        _reviewCode = null;
+        AdminShowsTeam = false;
+        InAdmin = true;
+        ClearSheet();
+        await OpenAdminSectionAsync(AdminViewModel.OverviewSection);
+    }
+
     /// <summary>A new temporary password for a person who forgot theirs; the person changes it at the next sign-in</summary>
     [RelayCommand]
     private async Task ResetPasswordAsync(AdminRow? row)
@@ -61,14 +85,57 @@ public partial class EmployeeViewModel
         if (name.Length == 0) { ErrorText = Loc.T("Upišite naziv praznika."); return; }
 
         var holiday = new HolidayDto(DateOnly.FromDateTime(date.Date), name);
+        var editing = Admin.EditingHolidayDate;
+
+        // A holiday moved to another day: the old day goes first, so a failed save does not leave both
         await _admin.SaveHolidayAsync(holiday);
+        if (editing is { } old && old != holiday.Date) await _admin.DeleteHolidayAsync(old);
 
         // The list shows the year of the holiday that was added
         Admin.HolidayYear = holiday.Date.Year;
         Admin.NewHolidayName = "";
+        Admin.EditingHolidayDate = null;
         await Admin.LoadExtrasAsync(_admin);
-        InfoText = Loc.F("Dodan praznik: {0} ({1}).", name, EmployeeFormat.Date(holiday.Date));
+        InfoText = editing != null
+            ? Loc.F("Sačuvan praznik: {0} ({1}).", name, EmployeeFormat.Date(holiday.Date))
+            : Loc.F("Dodan praznik: {0} ({1}).", name, EmployeeFormat.Date(holiday.Date));
     });
+
+    /// <summary>An added holiday goes back into the form above the list; saving it replaces the old one</summary>
+    [RelayCommand]
+    private void EditHoliday(HolidayRow? row)
+    {
+        if (row == null || row.IsBuiltIn) return;
+
+        Admin.EditingHolidayDate = row.Date;
+        Admin.NewHolidayDate = new DateTimeOffset(row.Date.ToDateTime(TimeOnly.MinValue));
+        Admin.NewHolidayName = row.Name;
+        InfoText = Loc.F("Mijenjate praznik {0}. Promijenite datum ili naziv iznad liste i sačuvajte.", row.Name);
+        ErrorText = "";
+    }
+
+    [RelayCommand]
+    private void CancelHolidayEdit()
+    {
+        Admin.EditingHolidayDate = null;
+        Admin.NewHolidayName = "";
+        InfoText = "";
+    }
+
+    [RelayCommand]
+    private async Task DeleteCodeAsync(CodeRow? row)
+    {
+        if (row == null || !row.CanDelete) return;
+        if (!await _dialogs.ConfirmAsync(Loc.T("Obriši šifru"), Loc.F("Obrisati šifru {0} · {1}? Ovo se ne može poništiti.", row.Code, row.Name))) return;
+
+        await RunAdminAsync(async () =>
+        {
+            await _admin.DeleteCodeAsync(row.Code);
+            await Admin.RefreshAsync(_admin);
+            await LoadTimeCodesAsync();
+            InfoText = Loc.F("Obrisana šifra {0}.", row.Code);
+        });
+    }
 
     [RelayCommand]
     private async Task RemoveHolidayAsync(HolidayRow? row)
@@ -79,6 +146,7 @@ public partial class EmployeeViewModel
         await RunAdminAsync(async () =>
         {
             await _admin.DeleteHolidayAsync(row.Date);
+            if (Admin.EditingHolidayDate == row.Date) Admin.EditingHolidayDate = null;
             await Admin.LoadExtrasAsync(_admin);
             InfoText = Loc.F("Uklonjen praznik: {0}.", row.Name);
         });

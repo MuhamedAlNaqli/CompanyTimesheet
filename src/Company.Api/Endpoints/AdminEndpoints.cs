@@ -122,7 +122,7 @@ public static class AdminEndpoints
 
         admin.MapGet("/holidays/{year:int}", async (int year, CompanyDbContext db) =>
             Results.Ok((await db.StateHolidays.AsNoTracking().Where(h => h.Date.Year == year).OrderBy(h => h.Date).ToListAsync())
-                .Select(h => new HolidayDto(h.Date, h.Name))));
+                .Select(h => new HolidayDto(h.Date, h.Name, HolidayCatalog.IsBuiltIn(h.Date, h.Name)))));
 
         admin.MapPost("/holidays", async (HolidayDto holiday, CompanyDbContext db, AuditService audit) =>
         {
@@ -224,6 +224,21 @@ public static class AdminEndpoints
             await db.SaveChangesAsync();
             await CodeCatalog.LoadAsync(db);
             return Results.Ok(ToDto(row, inUse));
+        });
+
+        admin.MapDelete("/codes/{code:int}", async (int code, CompanyDbContext db, AuditService audit) =>
+        {
+            var row = await db.Codes.FirstOrDefaultAsync(c => c.Code == code);
+            if (row == null) return NotFound("code");
+            if (row.IsSystem) return Results.BadRequest(new ApiErrorDto("system-code", "The rules of the program rely on this code: it cannot be deleted."));
+            if (await db.SheetEntries.AnyAsync(e => e.Code == code))
+                return Results.BadRequest(new ApiErrorDto("code-in-use", "Sheets already use this code, so it cannot be deleted. Switch it off instead; old entries stay."));
+
+            db.Codes.Remove(row);
+            audit.Record("CodeRemoved", "Code", code.ToString(), row.NameBs);
+            await db.SaveChangesAsync();
+            await CodeCatalog.LoadAsync(db);
+            return Results.NoContent();
         });
 
         // ---- Timesheets --------------------------------------------------------------------------------------------

@@ -42,10 +42,24 @@ public partial class EmployeeViewModel : ObservableObject
     [ObservableProperty] private string _infoText = "";
 
     /// <summary>The person has people reporting to them</summary>
-    [ObservableProperty] private bool _isApprover;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSwitchWork))]
+    private bool _isApprover;
 
     /// <summary>The person administers the company's employees (the administrator tab)</summary>
-    [ObservableProperty] private bool _isAdmin;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAdminSections))]
+    [NotifyPropertyChangedFor(nameof(CanSwitchWork))]
+    private bool _isAdmin;
+
+    /// <summary>An administrator who is also somebody's approver can switch to the timesheets of the people below; true while that is shown</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAdminSections))]
+    private bool _adminShowsTeam;
+
+    public bool ShowAdminSections => IsAdmin && !AdminShowsTeam;
+
+    public bool CanSwitchWork => IsAdmin && IsApprover;
 
     /// <summary>The server gives the timesheet as an Excel or PDF file (switched off for now)</summary>
     [ObservableProperty] private bool _canExport;
@@ -258,7 +272,7 @@ public partial class EmployeeViewModel : ObservableObject
             }
 
             // An administrator only administers: no timesheet is loaded for them, the administration is all there is
-            if (IsAdmin)
+            if (IsAdmin && !AdminShowsTeam)
             {
                 InAdmin = true;
                 await Admin.RefreshAsync(_admin);
@@ -1079,6 +1093,7 @@ public partial class EmployeeViewModel : ObservableObject
         UserCode = "";
         IsApprover = false;
         IsAdmin = false;
+        AdminShowsTeam = false;
         CanExport = false;
         InApprovals = false;
         InTeam = false;

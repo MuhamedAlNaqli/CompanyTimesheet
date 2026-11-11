@@ -77,4 +77,6 @@ public interface ICompanyAdminClient
     Task<CodeDefinitionDto> AddCodeAsync(SaveCodeRequest request, CancellationToken ct = default);
 
     Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default);
+
+    Task DeleteCodeAsync(int code, CancellationToken ct = default);
 }

@@ -19,6 +19,9 @@ public sealed record StatCard(string Title, string Value, string Caption, string
 public sealed record AttentionItem(string Text, string Section, bool IsWarning)
 {
     public string ButtonText => Loc.T("Otvori");
+
+    /// <summary>The overview is where the item is already shown, so there is nothing to open</summary>
+    public bool CanOpen => Section != AdminViewModel.OverviewSection;
 }
 
 /// <summary>A state holiday in the list of the year</summary>
@@ -31,7 +34,15 @@ public sealed class HolidayRow
         Name = holiday.Name;
         DateText = EmployeeFormat.Date(holiday.Date);
         WeekdayText = EmployeeFormat.Weekday(holiday.Date);
+        IsBuiltIn = holiday.IsBuiltIn;
     }
+
+    /// <summary>Written by the server: shown as locked, it cannot be changed or removed</summary>
+    public bool IsBuiltIn { get; }
+
+    public bool CanEdit => !IsBuiltIn;
+
+    public double RowOpacity => IsBuiltIn ? 0.55 : 1.0;
 
     public HolidayDto Holiday { get; }
 
@@ -253,6 +264,16 @@ public sealed partial class AdminViewModel
     [ObservableProperty] private string _newHolidayName = "";
 
     [ObservableProperty] private string _holidaysSummary = "";
+
+    /// <summary>The date of the added holiday that is being changed; null while a new one is typed</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HolidayButtonText))]
+    [NotifyPropertyChangedFor(nameof(IsEditingHoliday))]
+    private DateOnly? _editingHolidayDate;
+
+    public bool IsEditingHoliday => EditingHolidayDate != null;
+
+    public string HolidayButtonText => IsEditingHoliday ? Loc.T("Sačuvaj izmjenu") : Loc.T("Dodaj praznik");
 
     // ---- Audit log -----------------------------------------------------------------------------------------------------
 

@@ -365,14 +365,6 @@ public sealed partial class AdminEmployeeViewModel : ObservableObject, IDialogRe
         RequestClose?.Invoke();
     }
 
-    /// <summary>Takes the user name away: the person cannot sign in until the administrator gives them a new one</summary>
-    [RelayCommand]
-    private void RemoveUsername()
-    {
-        Result = new AdminEditResult(new UpdateEmployeeRequest(null, null, null, null, null, null, null, null), null, RemoveCredentials: true);
-        RequestClose?.Invoke();
-    }
-
     [RelayCommand]
     private void Cancel() => RequestClose?.Invoke();
 }

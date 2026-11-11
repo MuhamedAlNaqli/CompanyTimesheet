@@ -112,7 +112,8 @@ public sealed record DirectoryUserDto(string Account, string DisplayName);
 
 public sealed record AccountMatchDto(string Account, string DisplayName, string? EmployeeCode, string Status);
 
-public sealed record HolidayDto(DateOnly Date, string Name);
+/// <summary>A state holiday; <see cref="IsBuiltIn"/> is true for one the server wrote itself (not changed since), which the administrator cannot edit</summary>
+public sealed record HolidayDto(DateOnly Date, string Name, bool IsBuiltIn = false);
 
 /// <summary>What the administrator sees first (see AdminOverviewService)</summary>
 public sealed record AdminOverviewDto(

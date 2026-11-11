@@ -80,6 +80,9 @@ public sealed class CodeRow
 
     public bool IsActive => Definition.IsActive;
 
+    /// <summary>A code of the program's own rules, or one that sheets use, stays; it can be switched off instead</summary>
+    public bool CanDelete => !Definition.IsSystem && !Definition.InUse;
+
     public string SearchKey { get; }
 }
 

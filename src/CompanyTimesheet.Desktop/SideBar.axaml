@@ -48,31 +48,44 @@
             <!-- The sections of the administration (only the administrator has them) -->
             <ScrollViewer Grid.Row="1" Margin="0,16,0,8" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding IsAdmin}">
             <StackPanel Spacing="4">
-                <Button Name="SidebarNavOverview" Classes="sidebar-nav" Classes.active="{Binding Admin.IsOverview}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="overview" ToolTip.Tip="{em:Tr 'Pregled'}">
+                <!-- An administrator who also approves: two kinds of work -->
+                <Button Name="SidebarNavAdministration" Classes="sidebar-nav" Classes.active="{Binding ShowAdminSections}" IsVisible="{Binding CanSwitchWork}" Command="{Binding OpenAdminWorkCommand}" ToolTip.Tip="{em:Tr 'Administracija'}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <materialIcons:MaterialIcon Kind="ShieldAccountOutline" Width="20" Height="20"/>
+                        <TextBlock Text="{em:Tr 'Administracija'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
+                    </StackPanel>
+                </Button>
+                <Button Name="SidebarNavTeamSheets" Classes="sidebar-nav" Classes.active="{Binding AdminShowsTeam}" IsVisible="{Binding CanSwitchWork}" Command="{Binding OpenTeamWorkCommand}" ToolTip.Tip="{em:Tr 'Šihtarice tima'}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <materialIcons:MaterialIcon Kind="AccountGroup" Width="20" Height="20"/>
+                        <TextBlock Text="{em:Tr 'Šihtarice tima'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
+                    </StackPanel>
+                </Button>
+                <Button Name="SidebarNavOverview" IsVisible="{Binding ShowAdminSections}" Classes="sidebar-nav" Classes.active="{Binding Admin.IsOverview}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="overview" ToolTip.Tip="{em:Tr 'Pregled'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="20" Height="20"/>
                         <TextBlock Text="{em:Tr 'Pregled'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="SidebarNavPeople" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowPeople}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="people" ToolTip.Tip="{em:Tr 'Osobe'}">
+                <Button Name="SidebarNavPeople" IsVisible="{Binding ShowAdminSections}" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowPeople}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="people" ToolTip.Tip="{em:Tr 'Osobe'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="AccountMultipleOutline" Width="20" Height="20"/>
                         <TextBlock Text="{em:Tr 'Osobe'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="SidebarNavCodes" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowCodes}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="codes" ToolTip.Tip="{em:Tr 'Šifre'}">
+                <Button Name="SidebarNavCodes" IsVisible="{Binding ShowAdminSections}" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowCodes}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="codes" ToolTip.Tip="{em:Tr 'Šifre'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="FormatListNumbered" Width="20" Height="20"/>
                         <TextBlock Text="{em:Tr 'Šifre'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="SidebarNavHolidays" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowHolidays}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="holidays" ToolTip.Tip="{em:Tr 'Praznici'}">
+                <Button Name="SidebarNavHolidays" IsVisible="{Binding ShowAdminSections}" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowHolidays}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="holidays" ToolTip.Tip="{em:Tr 'Praznici'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="CalendarMonthOutline" Width="20" Height="20"/>
                         <TextBlock Text="{em:Tr 'Praznici'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>
                     </StackPanel>
                 </Button>
-                <Button Name="SidebarNavAudit" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowAudit}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="audit" ToolTip.Tip="{em:Tr 'Revizija'}">
+                <Button Name="SidebarNavAudit" IsVisible="{Binding ShowAdminSections}" Classes="sidebar-nav" Classes.active="{Binding Admin.ShowAudit}" Command="{Binding OpenAdminSectionCommand}" CommandParameter="audit" ToolTip.Tip="{em:Tr 'Revizija'}">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <materialIcons:MaterialIcon Kind="ShieldCheckOutline" Width="20" Height="20"/>
                         <TextBlock Text="{em:Tr 'Revizija'}" VerticalAlignment="Center" IsVisible="{Binding SidebarShowsText}"/>

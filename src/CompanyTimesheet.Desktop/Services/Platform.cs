@@ -71,7 +71,7 @@ public sealed class PlatformService : IPlatformService
             : null;
 
     private static List<FilePickerFileType> Convert(Dictionary<string, List<string>> fileTypes) =>
-        fileTypes.Select(t => new FilePickerFileType(t.Key) { Patterns = t.Value.ToArray() }).ToList();
+        fileTypes.Select(t => new FilePickerFileType(t.Key) { Patterns = t.Value.Select(x => x.Contains('*') ? x : "*." + x.TrimStart('.')).ToArray() }).ToList();
 }
 
 /// <summary>The yes / no question of the window, in Bosnian (the standard buttons of the library are English)</summary>

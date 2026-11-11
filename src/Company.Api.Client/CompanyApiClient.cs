@@ -166,6 +166,9 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
     public Task<CodeDefinitionDto> UpdateCodeAsync(int code, SaveCodeRequest request, CancellationToken ct = default) =>
         SendAsync<CodeDefinitionDto>(HttpMethod.Put, $"/api/admin/codes/{code}", request, ct);
 
+    public Task DeleteCodeAsync(int code, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Delete, $"/api/admin/codes/{code}", null, ct);
+
     // ---- Identity and reference data ------------------------------------------------------------------------------------
 
     public Task<MeDto> GetMeAsync(CancellationToken ct = default) => GetAsync<MeDto>("/api/me", ct);
@@ -289,7 +292,9 @@ public sealed class CompanyApiClient : ICompanyApiClient, ICompanySession, IComp
 
     private Task<T> SendAsync<T>(HttpMethod method, string url, object? body, CancellationToken ct) =>
         SendCoreAsync(method, url, body, async response =>
-            await response.Content.ReadFromJsonAsync<T>(cancellationToken: ct) ?? throw new ApiException(response.StatusCode, "empty", "The server sent an empty answer."), ct);
+            response.StatusCode == HttpStatusCode.NoContent || response.Content.Headers.ContentLength == 0
+                ? (typeof(T) == typeof(object) ? (T)new object() : throw new ApiException(response.StatusCode, "empty", "The server sent an empty answer."))
+                : await response.Content.ReadFromJsonAsync<T>(cancellationToken: ct) ?? throw new ApiException(response.StatusCode, "empty", "The server sent an empty answer."), ct);
 
     private async Task<T> SendCoreAsync<T>(HttpMethod method, string url, object? body, Func<HttpResponseMessage, Task<T>> read, CancellationToken ct)
     {
